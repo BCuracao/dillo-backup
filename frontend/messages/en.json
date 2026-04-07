@@ -1,0 +1,232 @@
+{
+  "metadata": {
+    "title": "Dillo",
+    "description": "A robust local backup management system."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Manage and monitor your backup jobs.",
+    "refresh": "Refresh",
+    "newJob": "New Job",
+    "stats": {
+      "totalJobs": "Total Jobs",
+      "active": "Active",
+      "succeeded": "Succeeded",
+      "failed": "Failed"
+    },
+    "availableDrives": "Available Drives",
+    "backupJobs": "Backup Jobs",
+    "autoRefresh": "Live updates",
+    "loadingJobs": "Loading jobs...",
+    "noJobs": "No backup jobs yet.",
+    "createFirstJob": "Create your first job"
+  },
+  "sidebar": {
+    "brand": "Dillo",
+    "brandSub": "Backup Manager",
+    "nav": {
+      "dashboard": "Dashboard",
+      "drives": "Drives",
+      "logs": "Logs",
+      "settings": "Settings"
+    },
+    "version": "v0.1.0 · Local Mode"
+  },
+  "createJob": {
+    "title": "Create Backup Job",
+    "validation": {
+      "nameRequired": "Job name is required.",
+      "sourceRequired": "Source folder is required.",
+      "destRequired": "Destination folder is required.",
+      "samePath": "Source and destination must be different to prevent recursion loops."
+    },
+    "errors": {
+      "createFailed": "Failed to create job.",
+      "backendDown": "Failed to create job. Is the backend running?"
+    },
+    "labels": {
+      "jobName": "Job Name",
+      "sourcePath": "Source Folder",
+      "destPath": "Destination Folder"
+    },
+    "placeholders": {
+      "jobName": "e.g. Daily Photos Backup",
+      "sourcePath": "Select source folder...",
+      "destPath": "Select destination folder..."
+    },
+    "submit": {
+      "creating": "Creating...",
+      "create": "Create Job"
+    }
+  },
+  "folderPicker": {
+    "browse": "Browse",
+    "goUp": "Go to parent folder",
+    "drives": "Drives",
+    "empty": "No subfolders found.",
+    "loadError": "Could not load folder contents. Is the backend running?",
+    "selectFolder": "Select: {path}",
+    "manualPathLabel": "Or enter path manually",
+    "manualPathPlaceholder": "e.g. X:\\MyStash or D:\\Backups",
+    "manualPathHint": "Use this if your drive (e.g. cloud/virtual) does not appear in the browser. The path will be verified when you save.",
+    "verifyAccess": "Verify access",
+    "validatedAccessible": "Path is accessible",
+    "emptyButAccessible": "No subfolders visible, but the path is reachable. You can select it.",
+    "notAccessible": "Path could not be reached"
+  },
+  "schedulePicker": {
+    "label": "Schedule",
+    "optional": "— optional",
+    "frequency": {
+      "manual": "Manual (no schedule)",
+      "hourly": "Every hour",
+      "daily": "Every day",
+      "weekly": "Every week",
+      "monthly": "Every month"
+    },
+    "atMinute": "at minute",
+    "atTime": "at",
+    "onDay": "on",
+    "onDayOfMonth": "on day",
+    "days": {
+      "sunday": "Sunday",
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday"
+    }
+  },
+  "editJob": {
+    "title": "Edit Backup Job",
+    "validation": {
+      "nameRequired": "Job name is required.",
+      "sourceRequired": "Source folder is required.",
+      "destRequired": "Destination folder is required.",
+      "samePath": "Source and destination must be different to prevent recursion loops."
+    },
+    "errors": {
+      "updateFailed": "Failed to update job.",
+      "backendDown": "Failed to update job. Is the backend running?"
+    },
+    "labels": {
+      "jobName": "Job Name",
+      "sourcePath": "Source Folder",
+      "destPath": "Destination Folder"
+    },
+    "placeholders": {
+      "jobName": "e.g. Daily Photos Backup",
+      "sourcePath": "Select source folder...",
+      "destPath": "Select destination folder..."
+    },
+    "submit": {
+      "saving": "Saving...",
+      "save": "Save Changes"
+    }
+  },
+  "jobCard": {
+    "deleteConfirm": "Delete job \"{name}\"? This cannot be undone.",
+    "created": "Created {time}",
+    "schedule": {
+      "manual": "Manual",
+      "hourly": "Hourly at :{minute}",
+      "daily": "Daily at {time}",
+      "weekly": "{day} at {time}",
+      "monthly": "Day {dayOfMonth} at {time}"
+    },
+    "stats": {
+      "filesCopied": "files copied",
+      "skipped": "skipped",
+      "total": "total"
+    },
+    "actions": {
+      "running": "Running...",
+      "runNow": "Run Now",
+      "paused": "Paused",
+      "dryRun": "Dry Run",
+      "verifiedRun": "Run with Verification",
+      "estimate": "Estimate Size",
+      "editJob": "Edit Job",
+      "pauseJob": "Pause Job",
+      "resumeJob": "Resume Job",
+      "deleteJob": "Delete Job"
+    },
+    "estimate": {
+      "scanning": "Scanning files...",
+      "filesToCopy": "files to copy",
+      "upToDate": "up-to-date"
+    },
+    "progress": {
+      "filesCopied": "{count} files copied",
+      "skipped": "{count} skipped",
+      "size": "{size}"
+    }
+  },
+  "driveCard": {
+    "usedOf": "{used} GB used of {total} GB",
+    "free": "{free} GB free"
+  },
+  "statusBadge": {
+    "RUNNING": "RUNNING",
+    "SUCCESS": "SUCCESS",
+    "ERROR": "ERROR",
+    "IDLE": "IDLE",
+    "PAUSED": "PAUSED"
+  },
+  "activityFeed": {
+    "title": "Activity Log",
+    "empty": "No activity recorded yet.",
+    "loadError": "Could not load activity logs.",
+    "showMore": "Show more",
+    "events": {
+      "JOB_CREATED": "Job Created",
+      "JOB_DELETED": "Job Deleted",
+      "JOB_RUN": "Backup Started",
+      "JOB_DRY_RUN": "Dry Run Started",
+      "JOB_COMPLETED": "Backup Completed",
+      "JOB_FAILED": "Backup Failed"
+    },
+    "timeAgo": {
+      "justNow": "just now",
+      "minutesAgo": "{count} min ago",
+      "hoursAgo": "{count}h ago",
+      "daysAgo": "{count}d ago"
+    }
+  },
+  "logsPage": {
+    "title": "Activity Logs",
+    "subtitle": "View the most recent activity across all backup jobs.",
+    "filters": "Filters",
+    "filterTitle": "Filter Activity Logs",
+    "clearFilters": "Clear all",
+    "filterJob": "Job Name",
+    "filterEvent": "Event Type",
+    "filterFrom": "From",
+    "filterTo": "To",
+    "allJobs": "All Jobs",
+    "allEvents": "All Events"
+  },
+  "toast": {
+    "jobCreated": "Backup job \"{name}\" created successfully.",
+    "jobUpdated": "Backup job \"{name}\" updated successfully.",
+    "jobDeleted": "Backup job \"{name}\" deleted.",
+    "jobQueued": "Backup job \"{name}\" queued ({mode}).",
+    "jobPaused": "Backup job \"{name}\" paused.",
+    "jobResumed": "Backup job \"{name}\" resumed.",
+    "actionFailed": "Action failed. Please try again.",
+    "modeLive": "live",
+    "modeDryRun": "dry-run",
+    "modeVerified": "verified"
+  },
+  "autoStart": {
+    "label": "Start on boot",
+    "description": "Launch Dillo automatically when you log in.",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
+  "languageSwitcher": {
+    "en": "English",
+    "de": "Deutsch"
+  }
+}

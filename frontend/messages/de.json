@@ -1,0 +1,232 @@
+{
+  "metadata": {
+    "title": "Dillo",
+    "description": "Ein robustes lokales Backup-Verwaltungssystem."
+  },
+  "dashboard": {
+    "title": "Übersicht",
+    "subtitle": "Verwalten und überwachen Sie Ihre Backup-Aufträge.",
+    "refresh": "Aktualisieren",
+    "newJob": "Neuer Auftrag",
+    "stats": {
+      "totalJobs": "Aufträge gesamt",
+      "active": "Aktiv",
+      "succeeded": "Erfolgreich",
+      "failed": "Fehlgeschlagen"
+    },
+    "availableDrives": "Verfügbare Laufwerke",
+    "backupJobs": "Backup-Aufträge",
+    "autoRefresh": "Live-Aktualisierung",
+    "loadingJobs": "Aufträge werden geladen...",
+    "noJobs": "Noch keine Backup-Aufträge vorhanden.",
+    "createFirstJob": "Ersten Auftrag erstellen"
+  },
+  "sidebar": {
+    "brand": "Dillo",
+    "brandSub": "Backup-Manager",
+    "nav": {
+      "dashboard": "Übersicht",
+      "drives": "Laufwerke",
+      "logs": "Protokolle",
+      "settings": "Einstellungen"
+    },
+    "version": "v0.1.0 · Lokaler Modus"
+  },
+  "createJob": {
+    "title": "Backup-Auftrag erstellen",
+    "validation": {
+      "nameRequired": "Auftragsname ist erforderlich.",
+      "sourceRequired": "Quellordner ist erforderlich.",
+      "destRequired": "Zielordner ist erforderlich.",
+      "samePath": "Quelle und Ziel müssen unterschiedlich sein, um Endlosschleifen zu vermeiden."
+    },
+    "errors": {
+      "createFailed": "Auftrag konnte nicht erstellt werden.",
+      "backendDown": "Auftrag konnte nicht erstellt werden. Läuft das Backend?"
+    },
+    "labels": {
+      "jobName": "Auftragsname",
+      "sourcePath": "Quellordner",
+      "destPath": "Zielordner"
+    },
+    "placeholders": {
+      "jobName": "z.B. Tägliches Foto-Backup",
+      "sourcePath": "Quellordner auswählen...",
+      "destPath": "Zielordner auswählen..."
+    },
+    "submit": {
+      "creating": "Wird erstellt...",
+      "create": "Auftrag erstellen"
+    }
+  },
+  "folderPicker": {
+    "browse": "Durchsuchen",
+    "goUp": "Übergeordneten Ordner öffnen",
+    "drives": "Laufwerke",
+    "empty": "Keine Unterordner gefunden.",
+    "loadError": "Ordnerinhalt konnte nicht geladen werden. Läuft das Backend?",
+    "selectFolder": "Auswählen: {path}",
+    "manualPathLabel": "Oder Pfad manuell eingeben",
+    "manualPathPlaceholder": "z.B. X:\\MyStash oder D:\\Backups",
+    "manualPathHint": "Nutzen Sie dies, wenn Ihr Laufwerk (z.B. Cloud/Virtuell) im Browser nicht erscheint. Der Pfad wird beim Speichern geprüft.",
+    "verifyAccess": "Zugriff prüfen",
+    "validatedAccessible": "Pfad ist erreichbar",
+    "emptyButAccessible": "Keine Unterordner sichtbar, aber der Pfad ist erreichbar. Sie können ihn auswählen.",
+    "notAccessible": "Pfad konnte nicht erreicht werden"
+  },
+  "schedulePicker": {
+    "label": "Zeitplan",
+    "optional": "— optional",
+    "frequency": {
+      "manual": "Manuell (kein Zeitplan)",
+      "hourly": "Stündlich",
+      "daily": "Täglich",
+      "weekly": "Wöchentlich",
+      "monthly": "Monatlich"
+    },
+    "atMinute": "zur Minute",
+    "atTime": "um",
+    "onDay": "am",
+    "onDayOfMonth": "am Tag",
+    "days": {
+      "sunday": "Sonntag",
+      "monday": "Montag",
+      "tuesday": "Dienstag",
+      "wednesday": "Mittwoch",
+      "thursday": "Donnerstag",
+      "friday": "Freitag",
+      "saturday": "Samstag"
+    }
+  },
+  "editJob": {
+    "title": "Backup-Auftrag bearbeiten",
+    "validation": {
+      "nameRequired": "Auftragsname ist erforderlich.",
+      "sourceRequired": "Quellordner ist erforderlich.",
+      "destRequired": "Zielordner ist erforderlich.",
+      "samePath": "Quelle und Ziel müssen unterschiedlich sein, um Endlosschleifen zu vermeiden."
+    },
+    "errors": {
+      "updateFailed": "Auftrag konnte nicht aktualisiert werden.",
+      "backendDown": "Auftrag konnte nicht aktualisiert werden. Läuft das Backend?"
+    },
+    "labels": {
+      "jobName": "Auftragsname",
+      "sourcePath": "Quellordner",
+      "destPath": "Zielordner"
+    },
+    "placeholders": {
+      "jobName": "z.B. Tägliches Foto-Backup",
+      "sourcePath": "Quellordner auswählen...",
+      "destPath": "Zielordner auswählen..."
+    },
+    "submit": {
+      "saving": "Wird gespeichert...",
+      "save": "Änderungen speichern"
+    }
+  },
+  "jobCard": {
+    "deleteConfirm": "Auftrag \"{name}\" löschen? Dies kann nicht rückgängig gemacht werden.",
+    "created": "Erstellt {time}",
+    "schedule": {
+      "manual": "Manuell",
+      "hourly": "Stündlich um :{minute}",
+      "daily": "Täglich um {time}",
+      "weekly": "{day} um {time}",
+      "monthly": "Tag {dayOfMonth} um {time}"
+    },
+    "stats": {
+      "filesCopied": "Dateien kopiert",
+      "skipped": "übersprungen",
+      "total": "gesamt"
+    },
+    "actions": {
+      "running": "Läuft...",
+      "runNow": "Jetzt starten",
+      "paused": "Pausiert",
+      "dryRun": "Testlauf",
+      "verifiedRun": "Mit Verifizierung starten",
+      "estimate": "Größe schätzen",
+      "editJob": "Auftrag bearbeiten",
+      "pauseJob": "Auftrag pausieren",
+      "resumeJob": "Auftrag fortsetzen",
+      "deleteJob": "Auftrag löschen"
+    },
+    "estimate": {
+      "scanning": "Dateien werden gescannt...",
+      "filesToCopy": "Dateien zu kopieren",
+      "upToDate": "aktuell"
+    },
+    "progress": {
+      "filesCopied": "{count} Dateien kopiert",
+      "skipped": "{count} übersprungen",
+      "size": "{size}"
+    }
+  },
+  "driveCard": {
+    "usedOf": "{used} GB belegt von {total} GB",
+    "free": "{free} GB frei"
+  },
+  "statusBadge": {
+    "RUNNING": "LÄUFT",
+    "SUCCESS": "ERFOLG",
+    "ERROR": "FEHLER",
+    "IDLE": "BEREIT",
+    "PAUSED": "PAUSIERT"
+  },
+  "activityFeed": {
+    "title": "Aktivitätsprotokoll",
+    "empty": "Noch keine Aktivitäten aufgezeichnet.",
+    "loadError": "Aktivitätsprotokolle konnten nicht geladen werden.",
+    "showMore": "Mehr anzeigen",
+    "events": {
+      "JOB_CREATED": "Auftrag erstellt",
+      "JOB_DELETED": "Auftrag gelöscht",
+      "JOB_RUN": "Backup gestartet",
+      "JOB_DRY_RUN": "Testlauf gestartet",
+      "JOB_COMPLETED": "Backup abgeschlossen",
+      "JOB_FAILED": "Backup fehlgeschlagen"
+    },
+    "timeAgo": {
+      "justNow": "gerade eben",
+      "minutesAgo": "vor {count} Min.",
+      "hoursAgo": "vor {count} Std.",
+      "daysAgo": "vor {count} T."
+    }
+  },
+  "logsPage": {
+    "title": "Aktivitätsprotokolle",
+    "subtitle": "Die neuesten Aktivitäten aller Backup-Aufträge anzeigen.",
+    "filters": "Filter",
+    "filterTitle": "Aktivitätsprotokolle filtern",
+    "clearFilters": "Alle löschen",
+    "filterJob": "Auftragsname",
+    "filterEvent": "Ereignistyp",
+    "filterFrom": "Von",
+    "filterTo": "Bis",
+    "allJobs": "Alle Aufträge",
+    "allEvents": "Alle Ereignisse"
+  },
+  "toast": {
+    "jobCreated": "Backup-Auftrag \"{name}\" erfolgreich erstellt.",
+    "jobUpdated": "Backup-Auftrag \"{name}\" erfolgreich aktualisiert.",
+    "jobDeleted": "Backup-Auftrag \"{name}\" gelöscht.",
+    "jobQueued": "Backup-Auftrag \"{name}\" eingereiht ({mode}).",
+    "jobPaused": "Backup-Auftrag \"{name}\" pausiert.",
+    "jobResumed": "Backup-Auftrag \"{name}\" fortgesetzt.",
+    "actionFailed": "Aktion fehlgeschlagen. Bitte erneut versuchen.",
+    "modeLive": "Live",
+    "modeDryRun": "Testlauf",
+    "modeVerified": "Verifiziert"
+  },
+  "autoStart": {
+    "label": "Beim Systemstart starten",
+    "description": "Dillo automatisch beim Anmelden starten.",
+    "enabled": "Aktiviert",
+    "disabled": "Deaktiviert"
+  },
+  "languageSwitcher": {
+    "en": "English",
+    "de": "Deutsch"
+  }
+}
