@@ -125,13 +125,47 @@ pybackup-sentinel/
 
 ## 2. Active Context
 
-- **Current Focus:** Settings page created, console window fix applied, color logo wired for desktop icon generation.
-- **Last Session:** 2026-04-08 — Settings page (auto-start toggle, language selector, about section), console window fix (`--windowed`), color logo for ICO/ICNS generation.
+- **Current Focus:** Fixed critical macOS bug — Safety Lock blocked all backup destinations; improved background-task error visibility.
+- **Last Session:** 2026-04-08 — Safety Lock fix for macOS/Linux, silent background-task failure fix.
 - **Running State:** Both servers can be launched via `start-dev.bat` (Windows dev), `start-dev.sh` (Unix dev), or `Dillo.exe` / `Dillo.app` (production). Backend on `:8000`, frontend on `:3000`.
 
 ---
 
 ## 3. Recent Changes
+
+### Session: 2026-04-08 — macOS Safety Lock Fix & Silent Failure Prevention
+
+**Goal:** Diagnose and fix backup jobs silently failing on macOS — no error shown, no log entry created, job appears to do nothing when run.
+
+**Root Cause:** Two compounding bugs:
+
+1. **Safety Lock blocked every path on macOS/Linux.** `config.py` included `"/"` in `protected_drives` for macOS. The comparison `resolved.startswith(protected.rstrip("/") + "/")` reduced to `resolved.startswith("/")` which is always true for any Unix path. Every backup destination was rejected with a `PermissionError`.
+2. **Pre-flight errors were silently swallowed.** Path validation and Safety Lock checks in `run_backup()` ran *before* the `JobLog` row was created and *outside* the `try/except` block. Exceptions propagated into FastAPI's `BackgroundTasks` runner, which discarded them — no `JobLog`, no activity entry, no UI feedback.
+
+**Fix 1: Safety Lock protected paths (`backend/config.py`)**
+
+- macOS `protected_drives` changed from `["/System", "/"]` to `["/System", "/usr", "/bin", "/sbin"]` — protects actual system directories without blocking user paths like `/Users/...` or `/Volumes/...`
+- Linux `protected_drives` changed from `["/"]` to `["/usr", "/bin", "/sbin"]` — same rationale
+
+**Fix 2: Safety Lock comparison hardening (`backend/services/backup_engine.py`)**
+
+- Added special-case handling for bare `"/"` in the Unix branch: if `protected.rstrip("/")` yields an empty string, only an exact match against `"/"` triggers the lock — prevents `startswith("")` from matching everything
+
+**Fix 3: Pre-flight error visibility (`backend/services/backup_engine.py`)**
+
+- Wrapped path validation + Safety Lock checks in `try/except` inside `run_backup()`
+- On failure: creates an `ERROR` `JobLog` row (with `error_message`), writes a `JOB_FAILED` activity log entry, and returns a `BackupReport` with the error — ensures the UI always shows feedback
+
+**Fix 4: macOS drives & browse endpoints (`backend/routers/system.py`)**
+
+- `GET /api/system/drives` — macOS: dynamically discovers volumes under `/Volumes` (was only listing Linux-style `/home`, `/mnt`, `/media` which don't exist on Mac); reports `apfs` as filesystem type; label uses directory name instead of full path
+- `GET /api/system/browse` (root listing) — macOS: shows `/`, `/Users`, `/Volumes` instead of Linux mount points
+
+**Fix 5: Dev launcher rebrand (`start-dev.bat`, `start-dev.sh`)**
+
+- Updated all "PyBackup Sentinel" references to "Dillo" in both development launcher scripts (header comments, banner text, window titles)
+
+---
 
 ### Session: 2026-04-08 — Settings Page, Console Window Fix, Color App Icon
 
@@ -1090,6 +1124,8 @@ python installer/build_windows.py --skip-inno  # Build without Inno Setup
 ### Known Fixes
 - **Console window on launch (2026-04-08):** Launcher was built with `--console`; changed to `--windowed` in both `build_windows.py` and `build_macos.py`. Requires rebuild.
 - **Color app icon (2026-04-08):** `convert_icons.py` now sources from `dillo-logo-color.png` (color armadillo) instead of the monochrome `dillo-logo.png`. Sidebar logo remains monochrome. Requires `python installer/convert_icons.py` + rebuild.
+- **Safety Lock blocks all macOS/Linux backups (2026-04-08):** `"/"` in `protected_drives` caused `startswith("")` to match every path. Fixed: macOS now protects `["/System", "/usr", "/bin", "/sbin"]`; Linux protects `["/usr", "/bin", "/sbin"]`. Safety Lock comparison also hardened against bare `"/"`.
+- **Silent background-task failures (2026-04-08):** Pre-flight errors (path validation, safety lock) raised before `JobLog` creation were swallowed by `BackgroundTasks`. Fixed: wrapped in `try/except` that persists an `ERROR` `JobLog` + activity entry. Requires rebuild.
 
 ### Open
 

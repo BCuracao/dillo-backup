@@ -56,8 +56,8 @@ class Settings(BaseSettings):
 
     protected_drives: list[str] = (
         ["C:\\"] if sys.platform == "win32"
-        else ["/System", "/"] if sys.platform == "darwin"
-        else ["/"]
+        else ["/System", "/usr", "/bin", "/sbin"] if sys.platform == "darwin"
+        else ["/usr", "/bin", "/sbin"]
     )
     max_concurrent_copies: int = 4
 

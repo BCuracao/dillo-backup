@@ -86,7 +86,21 @@ async def list_drives() -> SystemDrivesResponse:
                     )
                 )
     else:
-        for mount in ("/", "/home", "/mnt", "/media"):
+        if platform.system() == "Darwin":
+            mounts = ["/"]
+            # macOS mounts external drives under /Volumes
+            volumes = Path("/Volumes")
+            if volumes.is_dir():
+                try:
+                    for entry in volumes.iterdir():
+                        if entry.is_dir() and not entry.is_symlink():
+                            mounts.append(str(entry))
+                except OSError:
+                    pass
+        else:
+            mounts = ["/", "/home", "/mnt", "/media"]
+
+        for mount in mounts:
             mp = Path(mount)
             if mp.exists() and mp.is_dir():
                 try:
@@ -94,10 +108,10 @@ async def list_drives() -> SystemDrivesResponse:
                     drives.append(
                         DriveInfo(
                             path=mount,
-                            label=mount,
+                            label=mp.name or "/",
                             total_gb=round(usage.total / (1024**3), 2),
                             free_gb=round(usage.free / (1024**3), 2),
-                            fs_type="ext4",
+                            fs_type="apfs" if platform.system() == "Darwin" else "ext4",
                         )
                     )
                 except OSError:
@@ -132,12 +146,16 @@ async def browse_directory(path: str = "") -> BrowseResponse:
                         )
                     )
         else:
-            for mount in ("/", "/home", "/mnt", "/media"):
+            if platform.system() == "Darwin":
+                browse_roots = ["/", "/Users", "/Volumes"]
+            else:
+                browse_roots = ["/", "/home", "/mnt", "/media"]
+            for mount in browse_roots:
                 mp = Path(mount)
                 if mp.exists() and mp.is_dir():
                     drives.append(
                         DirectoryEntry(
-                            name=mount,
+                            name=mp.name or "/",
                             path=mount,
                             is_drive=True,
                         )

@@ -97,25 +97,50 @@ class BackupManager:
 
             source = Path(job.source_path)
             dest = Path(job.dest_path)
+            job_name = job.name
+            job_source = job.source_path
+            job_dest = job.dest_path
 
-            # Canary test: verify both paths are accessible before starting.
-            # Virtual/cloud drives (Dokan, WinFsp, Filen.io) may fail
-            # standard os.path.isdir() but respond to deeper probes.
-            src_check = verify_directory_access(job.source_path)
-            if not src_check.accessible:
-                raise FileNotFoundError(
-                    f"Source path is not accessible: {job.source_path} "
-                    f"({src_check.error or 'unknown'})"
+            # Pre-flight checks (path access + safety lock).
+            # Failures here used to silently vanish in the background task,
+            # so we catch them and persist a proper ERROR log + activity entry.
+            try:
+                src_check = verify_directory_access(job_source)
+                if not src_check.accessible:
+                    raise FileNotFoundError(
+                        f"Source path is not accessible: {job_source} "
+                        f"({src_check.error or 'unknown'})"
+                    )
+                dst_check = verify_directory_access(job_dest)
+                if not dst_check.accessible:
+                    raise FileNotFoundError(
+                        f"Destination path is not accessible: {job_dest} "
+                        f"({dst_check.error or 'unknown'})"
+                    )
+                cls._check_safety_lock(dest, force_system_drive)
+            except Exception as preflight_exc:
+                logger.error("Pre-flight check failed for job %s: %s", job_id, preflight_exc)
+                error_log = JobLog(
+                    job_id=job_id,
+                    start_time=datetime.now(timezone.utc),
+                    end_time=datetime.now(timezone.utc),
+                    status="ERROR",
+                    is_dry_run=dry_run,
+                    error_message=str(preflight_exc),
                 )
-            dst_check = verify_directory_access(job.dest_path)
-            if not dst_check.accessible:
-                raise FileNotFoundError(
-                    f"Destination path is not accessible: {job.dest_path} "
-                    f"({dst_check.error or 'unknown'})"
+                session.add(error_log)
+                await session.commit()
+                await log_activity(
+                    event_type=EventType.JOB_FAILED,
+                    job_name=job_name,
+                    message=f"Backup failed (pre-flight): {job_source} → {job_dest}",
+                    job_id=job_id,
+                    details=str(preflight_exc),
                 )
-
-            # Safety Lock: block protected drives as destination
-            cls._check_safety_lock(dest, force_system_drive)
+                report = BackupReport(job_id=job_id, dry_run=dry_run)
+                report.errors.append(str(preflight_exc))
+                report.end_time = time.monotonic()
+                return report
 
             # Create a RUNNING log entry
             log_entry = JobLog(
@@ -172,8 +197,8 @@ class BackupManager:
                 details += f" | Errors: {len(report.errors)}"
             await log_activity(
                 event_type=event,
-                job_name=job.name,
-                message=f"{mode_label} {report.status.lower()}: {job.source_path} → {job.dest_path}",
+                job_name=job_name,
+                message=f"{mode_label} {report.status.lower()}: {job_source} → {job_dest}",
                 job_id=job_id,
                 details=details,
             )
@@ -418,7 +443,15 @@ class BackupManager:
                     )
         else:
             for protected in settings.protected_drives:
-                if resolved == protected or resolved.startswith(protected.rstrip("/") + "/"):
+                norm = protected.rstrip("/")
+                if not norm:
+                    # Bare "/" — only block the root directory itself
+                    if resolved == "/":
+                        raise PermissionError(
+                            f"Safety Lock: destination is the filesystem root. "
+                            f"Set force_system_drive=true to override."
+                        )
+                elif resolved == protected or resolved.startswith(norm + "/"):
                     raise PermissionError(
                         f"Safety Lock: destination path '{resolved}' is inside "
                         f"protected area '{protected}'. "
