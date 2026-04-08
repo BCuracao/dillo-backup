@@ -238,11 +238,7 @@
     "autoStartNotAvailable": "Autostart ist nur in der installierten Version verfügbar.",
     "about": "Über",
     "version": "Version",
-    "platform": "Plattform",
-    "downloads": "Downloads",
-    "downloadsDescription": "Installieren Sie Dillo auf dem Mac mit dem folgenden Datenträgerabbild.",
-    "downloadMacOS": "macOS — Dillo 1.0.0 (.dmg)",
-    "downloadMacOSHint": "DMG öffnen und Dillo in Programme ziehen."
+    "platform": "Plattform"
   },
   "autoStart": {
     "label": "Beim Systemstart starten",

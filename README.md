@@ -92,14 +92,6 @@ npm run dev
 - **Dashboard:** [http://localhost:3000](http://localhost:3000)
 - **API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
 
-## Downloads
-
-| Platform | Installer |
-| -------- | --------- |
-| **macOS** | [Dillo-1.0.0.dmg](https://7qeqskzh2fcuj2p9.public.blob.vercel-storage.com/Dillo-1.0.0.dmg) |
-
-Open the DMG, drag **Dillo** into **Applications**, then launch it from Launchpad or the Applications folder.
-
 ## Production Build
 
 ### Windows Installer
