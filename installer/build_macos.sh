@@ -262,9 +262,10 @@ PLIST
     cp "$DIST_DIR/Dillo" "$MACOS_DIR/Dillo"
     chmod +x "$MACOS_DIR/Dillo"
 
-    cp -R "$DIST_DIR/backend" "$MACOS_DIR/backend"
-    cp -R "$DIST_DIR/frontend" "$MACOS_DIR/frontend"
-    cp -R "$DIST_DIR/node" "$MACOS_DIR/node"
+    # Backend / frontend / node live in Resources (see launcher.py + Gatekeeper).
+    cp -R "$DIST_DIR/backend" "$RESOURCES/backend"
+    cp -R "$DIST_DIR/frontend" "$RESOURCES/frontend"
+    cp -R "$DIST_DIR/node" "$RESOURCES/node"
 
     # Icon (optional)
     if [ -f "$INSTALLER_DIR/dillo.icns" ]; then
@@ -272,6 +273,13 @@ PLIST
     fi
 
     log ".app bundle created at: $APP_BUNDLE"
+}
+
+sign_app_bundle() {
+    log "============================================================"
+    log "STEP 5b: Ad-hoc code signing (Gatekeeper)"
+    log "============================================================"
+    codesign --force --deep --sign - "$APP_BUNDLE"
 }
 
 # ── Step 6: Create DMG ────────────────────────────────────────────────
@@ -325,6 +333,7 @@ main() {
     download_node
     build_launcher
     assemble_app_bundle
+    sign_app_bundle
 
     if [ "$SKIP_DMG" = false ]; then
         create_dmg

@@ -299,15 +299,37 @@ def assemble_app_bundle() -> None:
     shutil.copy2(launcher_bin, macos_dir / "Dillo")
     os.chmod(macos_dir / "Dillo", 0o755)
 
-    shutil.copytree(DIST_DIR / "backend", macos_dir / "backend")
-    shutil.copytree(DIST_DIR / "frontend", macos_dir / "frontend")
-    shutil.copytree(DIST_DIR / "node", macos_dir / "node")
+    # Ship backend / frontend / node under Resources (not MacOS) so codesign
+    # does not treat node_modules and other data as signed code.
+    shutil.copytree(DIST_DIR / "backend", resources / "backend")
+    shutil.copytree(DIST_DIR / "frontend", resources / "frontend")
+    shutil.copytree(DIST_DIR / "node", resources / "node")
 
     icns_path = ASSETS_DIR / "dillo.icns"
     if icns_path.exists():
         shutil.copy2(icns_path, resources / "dillo.icns")
 
     log.info(".app bundle created at: %s", APP_BUNDLE)
+
+
+def sign_app_bundle(app_bundle: Path) -> None:
+    """Re-seal the bundle with an ad hoc signature.
+
+    Without this step, Gatekeeper often shows a misleading dialog: the app
+    appears "damaged" and the only button is to trash it. Re-signing after
+    the final folder layout fixes validation for local / unsigned builds.
+    """
+    log.info("=" * 60)
+    log.info("STEP 5b: Ad-hoc code signing (Gatekeeper)")
+    log.info("=" * 60)
+    run([
+        "codesign",
+        "--force",
+        "--deep",
+        "--sign",
+        "-",
+        str(app_bundle),
+    ])
 
 
 # ── Step 6: Create DMG ───────────────────────────────────────────────
@@ -373,6 +395,7 @@ def main() -> None:
     download_node(args.node_version)
     build_launcher()
     assemble_app_bundle()
+    sign_app_bundle(APP_BUNDLE)
 
     if not args.skip_dmg:
         create_dmg()

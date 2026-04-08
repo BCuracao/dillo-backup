@@ -7,9 +7,11 @@ It is bundled into dillo.exe via PyInstaller (--onefile --windowed).
 from __future__ import annotations
 
 import atexit
+import errno
 import logging
 import os
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -24,18 +26,83 @@ logging.basicConfig(
 log = logging.getLogger("dillo.launcher")
 
 BACKEND_PORT = 8000
-FRONTEND_PORT = 3000
+_DEFAULT_FRONTEND_PORT = 3000
 HEALTH_URL = f"http://127.0.0.1:{BACKEND_PORT}/api/system/health"
-FRONTEND_URL = f"http://localhost:{FRONTEND_PORT}"
 
 _children: list[subprocess.Popen] = []
 
 
 def _resolve_install_dir() -> Path:
-    """Return the installation root (parent of the launcher executable)."""
+    """Return the directory containing the launcher executable."""
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parent.parent
+
+
+def _resolve_bundle_root() -> Path:
+    """Directory that contains backend/, frontend/, and node/.
+
+    On a macOS .app bundle these live in Contents/Resources; the executable
+    stays in Contents/MacOS so Gatekeeper/code signing only seals real Mach-O
+    binaries under MacOS. Falls back to the executable directory (legacy layout
+    with payloads next to the launcher) or to walking up to ``*.app``.
+    """
+    base = _resolve_install_dir()
+    if sys.platform == "darwin" and getattr(sys, "frozen", False):
+        if base.name == "MacOS" and base.parent.name == "Contents":
+            resources = base.parent / "Resources"
+            if (resources / "backend").is_dir():
+                return resources
+        exe = Path(sys.executable).resolve()
+        for ancestor in [exe, *exe.parents]:
+            if ancestor.suffix == ".app" and ancestor.is_dir():
+                resources = ancestor / "Contents" / "Resources"
+                if (resources / "backend").is_dir():
+                    return resources
+                break
+    if (base / "backend").is_dir():
+        return base
+    return base
+
+
+def _pause_before_exit() -> None:
+    """Avoid ``input()`` when stdin is not a TTY (double-clicked ``.app``).
+
+    PyInstaller would otherwise raise EOFError and macOS reports a broken app.
+    """
+    if sys.stdin.isatty():
+        input("Press Enter to exit...")
+    else:
+        time.sleep(12)
+
+
+def _port_available(port: int) -> bool:
+    """True if loopback can bind on the port (IPv4; IPv6 on macOS/Linux when available)."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            s.bind(("127.0.0.1", port))
+        except OSError:
+            return False
+    if sys.platform == "win32":
+        return True
+    try:
+        with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.bind(("::1", port))
+    except OSError as exc:
+        if exc.errno in (errno.EADDRINUSE, errno.EACCES):
+            return False
+    return True
+
+
+def _pick_local_port(preferred: int, attempts: int = 20) -> int:
+    """Return a TCP port free on loopback (check both ``127.0.0.1`` and ``::1``)."""
+    for port in range(preferred, preferred + attempts):
+        if _port_available(port):
+            return port
+    log.error("No free TCP port in range %d–%d", preferred, preferred + attempts - 1)
+    return preferred
 
 
 def _kill_children() -> None:
@@ -87,17 +154,17 @@ def _open_browser(url: str) -> None:
 
 
 def main() -> None:
-    install_dir = _resolve_install_dir()
-    log.info("Install directory: %s", install_dir)
+    bundle_root = _resolve_bundle_root()
+    log.info("Bundle root: %s", bundle_root)
 
     # ── Resolve paths (cross-platform) ───────────────────────────────
     if sys.platform == "win32":
-        backend_exe = install_dir / "backend" / "dillo-backend" / "dillo-backend.exe"
-        node_exe = install_dir / "node" / "node.exe"
+        backend_exe = bundle_root / "backend" / "dillo-backend" / "dillo-backend.exe"
+        node_exe = bundle_root / "node" / "node.exe"
     else:
-        backend_exe = install_dir / "backend" / "dillo-backend" / "dillo-backend"
-        node_exe = install_dir / "node" / "bin" / "node"
-    frontend_server = install_dir / "frontend" / "server.js"
+        backend_exe = bundle_root / "backend" / "dillo-backend" / "dillo-backend"
+        node_exe = bundle_root / "node" / "bin" / "node"
+    frontend_server = bundle_root / "frontend" / "server.js"
 
     for label, path in [
         ("Backend", backend_exe),
@@ -125,27 +192,36 @@ def main() -> None:
     log.info("Starting backend on port %d ...", BACKEND_PORT)
     backend_proc = subprocess.Popen(
         [str(backend_exe)],
-        cwd=str(install_dir),
+        cwd=str(bundle_root),
         creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
     )
     _children.append(backend_proc)
 
     if not _wait_for_health(HEALTH_URL, timeout=30):
         log.error("Backend failed to start within 30 seconds.")
-        input("Press Enter to exit...")
+        _pause_before_exit()
         sys.exit(1)
     log.info("Backend is healthy.")
 
+    frontend_port = _pick_local_port(_DEFAULT_FRONTEND_PORT)
+    frontend_url = f"http://localhost:{frontend_port}"
+    if frontend_port != _DEFAULT_FRONTEND_PORT:
+        log.warning(
+            "Port %d is in use; using %d for the web UI.",
+            _DEFAULT_FRONTEND_PORT,
+            frontend_port,
+        )
+
     # ── Start frontend ────────────────────────────────────────────────
-    log.info("Starting frontend on port %d ...", FRONTEND_PORT)
+    log.info("Starting frontend on port %d ...", frontend_port)
     frontend_env = {
         **os.environ,
-        "PORT": str(FRONTEND_PORT),
+        "PORT": str(frontend_port),
         "HOSTNAME": "localhost",
     }
     frontend_proc = subprocess.Popen(
         [str(node_exe), str(frontend_server)],
-        cwd=str(install_dir / "frontend"),
+        cwd=str(bundle_root / "frontend"),
         env=frontend_env,
         creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
     )
@@ -155,12 +231,12 @@ def main() -> None:
     time.sleep(2)
     if frontend_proc.poll() is not None:
         log.error("Frontend process exited immediately (code %d).", frontend_proc.returncode)
-        input("Press Enter to exit...")
+        _pause_before_exit()
         sys.exit(1)
     log.info("Frontend started.")
 
     # ── Open browser ──────────────────────────────────────────────────
-    _open_browser(FRONTEND_URL)
+    _open_browser(frontend_url)
     log.info("Dillo is running. Close this window to stop.")
 
     # ── Wait for either process to exit ───────────────────────────────
