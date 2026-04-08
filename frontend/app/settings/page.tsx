@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { Globe, Monitor, Power, Settings } from "lucide-react";
+import { Download, Globe, Monitor, Power, Settings } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { DOWNLOAD_MACOS_DMG_URL } from "@/lib/downloads";
 import { fetchAutoStartStatus, setAutoStart } from "@/lib/api";
 import type { AutoStartStatus } from "@/lib/types";
 
@@ -157,6 +158,29 @@ export default function SettingsPage() {
                   {t("autoStartNotAvailable")}
                 </span>
               )}
+            </div>
+          </section>
+
+          {/* ── Downloads Section ───────────────────────────────── */}
+          <section className="rounded-xl border border-card-border bg-card">
+            <div className="border-b border-card-border px-5 py-3">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
+                {t("downloads")}
+              </h2>
+            </div>
+
+            <div className="px-5 py-4">
+              <p className="mb-3 text-xs text-muted">{t("downloadsDescription")}</p>
+              <a
+                href={DOWNLOAD_MACOS_DMG_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border border-card-border bg-background px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-accent/40 hover:bg-accent/5"
+              >
+                <Download size={16} className="text-accent" />
+                {t("downloadMacOS")}
+              </a>
+              <p className="mt-2 text-xs text-muted">{t("downloadMacOSHint")}</p>
             </div>
           </section>
 
