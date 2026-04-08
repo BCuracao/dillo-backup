@@ -219,6 +219,27 @@
     "modeDryRun": "Testlauf",
     "modeVerified": "Verifiziert"
   },
+  "drivesPage": {
+    "title": "Laufwerke",
+    "subtitle": "Speicherverbrauch der angeschlossenen Laufwerke überwachen.",
+    "noDrives": "Keine Laufwerke erkannt. Läuft das Backend?",
+    "refreshing": "Wird aktualisiert...",
+    "refresh": "Aktualisieren"
+  },
+  "settingsPage": {
+    "title": "Einstellungen",
+    "subtitle": "Anwendungseinstellungen konfigurieren.",
+    "general": "Allgemein",
+    "language": "Sprache",
+    "languageDescription": "Wählen Sie die Anzeigesprache der Benutzeroberfläche.",
+    "startup": "Autostart",
+    "autoStartToggling": "Wird aktualisiert...",
+    "autoStartError": "Autostart-Einstellung konnte nicht aktualisiert werden.",
+    "autoStartNotAvailable": "Autostart ist nur in der installierten Version verfügbar.",
+    "about": "Über",
+    "version": "Version",
+    "platform": "Plattform"
+  },
   "autoStart": {
     "label": "Beim Systemstart starten",
     "description": "Dillo automatisch beim Anmelden starten.",

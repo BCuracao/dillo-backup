@@ -7,6 +7,7 @@
 - **Goal:** A robust local backup management web application that lets users schedule, customize, and monitor local data backups via a modern dark-mode browser interface.
 - **Stack:** Python 3.12+ (FastAPI, SQLAlchemy 2.0, aiosqlite), Next.js 16 (App Router, TypeScript, Tailwind CSS, next-intl), SQLite.
 - **Status:** MVP complete — full-stack scaffold through verified end-to-end integration. All core CRUD, incremental backup engine, and dashboard UI are functional.
+- **Repository:** [github.com/BCuracao/dillo](https://github.com/BCuracao/dillo)
 
 ### Architecture
 
@@ -82,6 +83,8 @@ pybackup-sentinel/
 │   │   ├── layout.tsx           # Root layout
 │   │   ├── logs/
 │   │   │   └── page.tsx         # Activity logs page (100 entries)
+│   │   ├── settings/
+│   │   │   └── page.tsx         # Settings page (auto-start, language, about)
 │   │   └── page.tsx             # Dashboard page
 │   ├── components/
 │   │   ├── ActivityFeed.tsx     # Activity log feed (polling, paginated)
@@ -122,13 +125,79 @@ pybackup-sentinel/
 
 ## 2. Active Context
 
-- **Current Focus:** Full production build pipeline for Windows (.exe via Inno Setup) and macOS (.dmg via hdiutil). Icon assets generated from `dillo-logo.png`. Both build scripts (`build_windows.py`, `build_macos.py`) are complete with DMG packaging.
-- **Last Session:** 2026-04-07 — Asset conversion (ICO/ICNS), Inno Setup refinements (dedicated icon file, user-selectable install dir), macOS `build_macos.py` with DMG creation, verified cross-platform autostart and config paths.
+- **Current Focus:** Settings page created, console window fix applied, color logo wired for desktop icon generation.
+- **Last Session:** 2026-04-08 — Settings page (auto-start toggle, language selector, about section), console window fix (`--windowed`), color logo for ICO/ICNS generation.
 - **Running State:** Both servers can be launched via `start-dev.bat` (Windows dev), `start-dev.sh` (Unix dev), or `Dillo.exe` / `Dillo.app` (production). Backend on `:8000`, frontend on `:3000`.
 
 ---
 
 ## 3. Recent Changes
+
+### Session: 2026-04-08 — Settings Page, Console Window Fix, Color App Icon
+
+**Goal:** Create a Settings page with auto-start toggle, fix the console window appearing on production launch, and wire the new color logo for desktop icon generation.
+
+**Task 1: Settings Page (`frontend/app/settings/page.tsx`)**
+
+- New: `app/settings/page.tsx` — Full settings page accessible via the `/settings` sidebar link:
+  - **General section:** Language selector (same locale-switching logic as `LanguageSwitcher`, now in a proper settings layout with description text)
+  - **Startup section:** Auto-start toggle switch — fetches status from `GET /api/system/autostart`, toggles via `PUT /api/system/autostart`; smooth animated toggle; shows fallback text when not running from installed build; error handling with inline message
+  - **About section:** Version number (1.0.0) and detected platform (from autostart status response)
+- `messages/en.json` + `de.json` — Added `settingsPage` namespace (12 keys each: title, subtitle, general, language, languageDescription, startup, autoStartToggling, autoStartError, autoStartNotAvailable, about, version, platform)
+
+**Task 2: Console Window Fix**
+
+- `installer/build_windows.py` — Launcher PyInstaller flag changed from `--console` to `--windowed`; `Dillo.exe` will no longer spawn a visible command prompt on launch
+- `installer/build_macos.py` — Same fix applied for the macOS launcher build
+- Note: Child processes (backend + frontend) already used `CREATE_NO_WINDOW` / no-console flags; only the launcher itself was showing the window
+
+**Task 3: Color Logo for Desktop Icons**
+
+- `installer/convert_icons.py` — Source path changed from `dillo-logo.png` to `dillo-logo-color.png`; next `python installer/convert_icons.py` run will generate `.ico` / `.icns` from the color armadillo logo
+- `dillo-logo-color.png` added to `frontend/public/` (color armadillo illustration)
+- Sidebar logo intentionally unchanged — keeps `dillo-logo.png` with `invert brightness-200` filter for the dark UI
+
+---
+
+### Session: 2026-04-08 — Git Repository Initialization & GitHub Setup
+
+**Goal:** Initialize version control, create a comprehensive `.gitignore`, update README with Dillo branding, and push the full project to a public GitHub repository.
+
+**Step 1: `.gitignore` Creation**
+
+- Created root `.gitignore` covering all required exclusions:
+  - SQLite databases (`*.db`, `*.db-journal`, `*.db-wal`, `*.db-shm`)
+  - Python artifacts (`__pycache__/`, `*.py[cod]`, `venv/`, `.pytest_cache/`)
+  - Backend logs (`backend/logs/`)
+  - Environment files (`.env`, `.env.*`)
+  - Frontend build artifacts (`frontend/.next/`, `frontend/node_modules/`)
+  - Build/distribution outputs (`build/`, `dist/`, `*.spec`)
+  - Installer generated assets (`installer/assets/*.ico`, `installer/assets/*.icns`, `installer/dillo.ico`)
+  - OS-specific files (`.DS_Store`, `Thumbs.db`)
+  - IDE files (`.vscode/`, `.idea/`) — `.cursor/rules/` explicitly preserved via negation pattern
+
+**Step 2: README Update**
+
+- Rewrote `README.md` with full Dillo branding:
+  - Badge row (Python, Next.js, SQLite, MIT license)
+  - Complete feature list (12 features: incremental, dry run, SHA-256, cron, safety lock, dashboard, logging, toasts, pause/resume, estimation, auto-start, i18n)
+  - Production build instructions (Windows Inno Setup + macOS DMG)
+  - Full API endpoint table (16 endpoints)
+  - Updated project structure reflecting current file manifest
+
+**Step 3: Git Initialization**
+
+- Removed nested `frontend/.git` directory (leftover from `create-next-app`)
+- Initialized repository, staged 69 files (16,060 lines), created initial commit
+- Renamed default branch from `master` to `main`
+
+**Step 4: GitHub Remote**
+
+- Installed GitHub CLI (`gh`) via winget
+- Created public repository: [github.com/BCuracao/dillo](https://github.com/BCuracao/dillo)
+- Pushed `main` branch to origin
+
+---
 
 ### Session: 2026-04-07 — Asset Conversion & Full Production Build Pipeline
 
@@ -926,9 +995,10 @@ python installer/build_windows.py --skip-inno  # Build without Inno Setup
 - [x] **Cross-Platform: macOS Support** _(completed 2026-04-07)_
   - `config.py` handles macOS (`~/Library/Application Support/Dillo`) and Linux (`$XDG_DATA_HOME/dillo`); platform-aware `protected_drives`
   - `installer/build_macos.sh` produces a `Dillo.app` bundle; launcher cross-platform
-- [x] **Feature: Auto-Start on Boot** _(completed 2026-04-07)_
+- [x] **Feature: Auto-Start on Boot** _(completed 2026-04-07, UI added 2026-04-08)_
   - `services/autostart.py`: Windows Registry, macOS LaunchAgent plist, Linux XDG desktop entry
   - API: `GET/PUT /api/system/autostart`; frontend API client + i18n (EN + DE)
+  - Settings page (`/settings`) with toggle switch, language selector, and about section
 - [x] **Installer Refinement (Windows - Inno Setup 6)** _(completed 2026-04-07)_
   - `DisableDirPage=no` enabled; `SetupIconFile=dillo.ico` uncommented; desktop shortcut checked by default with icon
 - [x] **Feature: Robust Path Validation (Network/Cloud Drive Enhancement)** _(completed 2026-04-07)_
@@ -1003,7 +1073,7 @@ python installer/build_windows.py --skip-inno  # Build without Inno Setup
 ### Git Setup (2026-02-23)
 
 - **Status**: Repository initialized and pushed to public remote.
-- **Remote URL**: https://github.com/BCuracao
+- **Remote URL**: [github.com/BCuracao/dillo](https://github.com/BCuracao/dillo)
 - **Branding**: All references updated from `PyBackup Sentinel` / `Stashit` to **Dillo**.
 - **Security & Safety**:
   - Comprehensive `.gitignore` implemented to prevent leaking SQLite databases (`*.db`), local logs, `.env` files, and OS-specific build artifacts.
@@ -1016,6 +1086,10 @@ python installer/build_windows.py --skip-inno  # Build without Inno Setup
 - **Assets**:
   - `installer/assets/dillo.ico` (Windows)
   - `installer/assets/dillo.icns` (macOS)
+
+### Known Fixes
+- **Console window on launch (2026-04-08):** Launcher was built with `--console`; changed to `--windowed` in both `build_windows.py` and `build_macos.py`. Requires rebuild.
+- **Color app icon (2026-04-08):** `convert_icons.py` now sources from `dillo-logo-color.png` (color armadillo) instead of the monochrome `dillo-logo.png`. Sidebar logo remains monochrome. Requires `python installer/convert_icons.py` + rebuild.
 
 ### Open
 

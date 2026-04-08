@@ -219,6 +219,27 @@
     "modeDryRun": "dry-run",
     "modeVerified": "verified"
   },
+  "drivesPage": {
+    "title": "Drives",
+    "subtitle": "Monitor storage usage across connected drives.",
+    "noDrives": "No drives detected. Is the backend running?",
+    "refreshing": "Refreshing...",
+    "refresh": "Refresh"
+  },
+  "settingsPage": {
+    "title": "Settings",
+    "subtitle": "Configure application preferences.",
+    "general": "General",
+    "language": "Language",
+    "languageDescription": "Choose the display language for the interface.",
+    "startup": "Startup",
+    "autoStartToggling": "Updating...",
+    "autoStartError": "Failed to update auto-start setting.",
+    "autoStartNotAvailable": "Auto-start is only available in the installed version.",
+    "about": "About",
+    "version": "Version",
+    "platform": "Platform"
+  },
   "autoStart": {
     "label": "Start on boot",
     "description": "Launch Dillo automatically when you log in.",

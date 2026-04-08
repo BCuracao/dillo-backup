@@ -271,7 +271,7 @@ def build_launcher() -> None:
         str(INSTALLER_DIR / "launcher.py"),
         "--name", "Dillo",
         "--onefile",
-        "--console",
+        "--windowed",
         "--distpath", str(DIST_DIR),
         "--workpath", str(PROJECT_ROOT / "build" / "launcher"),
         "--specpath", str(PROJECT_ROOT / "build"),

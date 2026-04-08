@@ -20,7 +20,7 @@ from pathlib import Path
 from PIL import Image
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-LOGO_PATH = PROJECT_ROOT / "frontend" / "public" / "dillo-logo.png"
+LOGO_PATH = PROJECT_ROOT / "frontend" / "public" / "dillo-logo-color.png"
 ASSETS_DIR = PROJECT_ROOT / "installer" / "assets"
 INSTALLER_DIR = PROJECT_ROOT / "installer"
 

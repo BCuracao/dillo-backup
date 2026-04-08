@@ -245,7 +245,7 @@ def build_launcher() -> None:
         str(pyinstaller),
         str(INSTALLER_DIR / "launcher.py"),
         "--name", "Dillo",
-        "--onefile", "--console",
+        "--onefile", "--windowed",
         "--distpath", str(DIST_DIR),
         "--workpath", str(PROJECT_ROOT / "build" / "launcher"),
         "--specpath", str(PROJECT_ROOT / "build"),
