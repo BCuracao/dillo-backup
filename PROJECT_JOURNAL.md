@@ -125,13 +125,23 @@ pybackup-sentinel/
 
 ## 2. Active Context
 
-- **Current Focus:** Fixed critical macOS bug — Safety Lock blocked all backup destinations; improved background-task error visibility.
-- **Last Session:** 2026-04-08 — Safety Lock fix for macOS/Linux, silent background-task failure fix.
+- **Current Focus:** Windows autostart registry fix — was registering `dillo-backend.exe` instead of `Dillo.exe` because the autostart API runs inside the backend process.
+- **Last Session:** 2026-04-08 — Autostart path resolution fix in `backend/services/autostart.py`.
 - **Running State:** Both servers can be launched via `start-dev.bat` (Windows dev), `start-dev.sh` (Unix dev), or `Dillo.exe` / `Dillo.app` (production). Backend on `:8000`, frontend on `:3000`.
 
 ---
 
 ## 3. Recent Changes
+
+### Session: 2026-04-08 — Windows Autostart Registered Backend Only (Fix)
+
+**Symptom:** After enabling auto-start in Settings, reboot showed only Uvicorn on `:8000`; `localhost:3000` unreachable. Registry `Run` value pointed at `...\backend\dillo-backend\dillo-backend.exe`.
+
+**Root cause:** `_get_exe_path()` used `sys.executable`, which in production is always the **backend** binary (the process serving the API). The **launcher** (`Dillo.exe` / `Dillo`) must be registered so both backend and Next.js start.
+
+**Fix:** `backend/services/autostart.py` — resolve install root from `.../backend/dillo-backend/<exe>`, then register `Dillo.exe` (Windows) or `Dillo` (macOS/Linux bundle layout). **Requires rebuild/reinstall** for existing users; manual registry fix: set quoted path to `D:\Dillo\Dillo.exe` (or toggle autostart off/on after update).
+
+---
 
 ### Session: 2026-04-08 — macOS Safety Lock Fix & Silent Failure Prevention
 
@@ -1126,6 +1136,7 @@ python installer/build_windows.py --skip-inno  # Build without Inno Setup
 - **Color app icon (2026-04-08):** `convert_icons.py` now sources from `dillo-logo-color.png` (color armadillo) instead of the monochrome `dillo-logo.png`. Sidebar logo remains monochrome. Requires `python installer/convert_icons.py` + rebuild.
 - **Safety Lock blocks all macOS/Linux backups (2026-04-08):** `"/"` in `protected_drives` caused `startswith("")` to match every path. Fixed: macOS now protects `["/System", "/usr", "/bin", "/sbin"]`; Linux protects `["/usr", "/bin", "/sbin"]`. Safety Lock comparison also hardened against bare `"/"`.
 - **Silent background-task failures (2026-04-08):** Pre-flight errors (path validation, safety lock) raised before `JobLog` creation were swallowed by `BackgroundTasks`. Fixed: wrapped in `try/except` that persists an `ERROR` `JobLog` + activity entry. Requires rebuild.
+- **Autostart registered wrong executable (2026-04-08):** Registry pointed at `dillo-backend.exe` because `sys.executable` is the API process. Fixed path resolution to `Dillo.exe` / `Dillo`. Existing installs: correct the `Run` value or disable and re-enable autostart after updating.
 
 ### Open
 

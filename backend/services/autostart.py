@@ -21,9 +21,30 @@ _LINUX_DESKTOP_ID = "dillo"
 
 
 def _get_exe_path() -> Path | None:
-    """Return the path to the launcher executable (frozen builds only)."""
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve()
+    """Return the path to register for auto-start (the GUI launcher only).
+
+    The Settings API runs inside the *backend* PyInstaller binary, so
+    ``sys.executable`` points at ``dillo-backend`` — registering that would only
+    start the API (port 8000), not Next.js (port 3000). Resolve the real launcher.
+    """
+    if not getattr(sys, "frozen", False):
+        return None
+
+    exe = Path(sys.executable).resolve()
+
+    # Layout (Windows/Linux portable + macOS .app):
+    #   {install}/backend/dillo-backend/dillo-backend(.exe)
+    #   {App}.app/Contents/MacOS/Dillo   ← launcher (bundled GUI entry)
+    #   {App}.app/Contents/MacOS/backend/dillo-backend/dillo-backend
+    # Three parents up from the backend binary: install root (Win/Linux) or
+    # Contents/MacOS (macOS) — in both cases the launcher is alongside backend/.
+    if exe.parent.name == "dillo-backend":
+        root = exe.parent.parent.parent
+        launcher = (root / "Dillo.exe") if sys.platform == "win32" else (root / "Dillo")
+        if launcher.is_file():
+            return launcher.resolve()
+
+    logger.warning("Could not resolve launcher path from backend executable: %s", exe)
     return None
 
 
