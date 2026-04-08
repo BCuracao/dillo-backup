@@ -125,8 +125,8 @@ pybackup-sentinel/
 
 ## 2. Active Context
 
-- **Current Focus:** Windows autostart registry fix — was registering `dillo-backend.exe` instead of `Dillo.exe` because the autostart API runs inside the backend process.
-- **Last Session:** 2026-04-08 — Autostart path resolution fix in `backend/services/autostart.py`.
+- **Current Focus:** Autostart registers the GUI launcher (not `dillo-backend`) on all frozen builds; fix is on `origin/main`.
+- **Last Session:** 2026-04-08 — Autostart path resolution; journal + push to GitHub.
 - **Running State:** Both servers can be launched via `start-dev.bat` (Windows dev), `start-dev.sh` (Unix dev), or `Dillo.exe` / `Dillo.app` (production). Backend on `:8000`, frontend on `:3000`.
 
 ---
