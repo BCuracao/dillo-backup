@@ -35,8 +35,8 @@ def _job_to_response(job: BackupJob) -> JobResponse:
     """Convert an ORM BackupJob (with eager-loaded logs) to the response schema."""
     latest_log: JobLogResponse | None = None
     if job.logs:
-        # Logs are ordered by start_time descending
-        most_recent = max(job.logs, key=lambda l: l.start_time)
+        # Prefer latest start_time; tie-break by row id so "latest run" is stable
+        most_recent = max(job.logs, key=lambda l: (l.start_time, l.id))
         latest_log = JobLogResponse.model_validate(most_recent)
 
     return JobResponse(

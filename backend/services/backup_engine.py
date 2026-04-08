@@ -167,6 +167,9 @@ class BackupManager:
             finally:
                 report.end_time = time.monotonic()
 
+            # Drop blank entries so we never persist ERROR with an empty message
+            report.errors = [e for e in report.errors if e and str(e).strip()]
+
             # Update the log entry with final results
             log_entry.end_time = datetime.now(timezone.utc)
             log_entry.status = report.status
@@ -195,6 +198,9 @@ class BackupManager:
             )
             if report.errors:
                 details += f" | Errors: {len(report.errors)}"
+                preview = "; ".join(x.strip() for x in report.errors[:5] if x and str(x).strip())
+                if preview:
+                    details += f" | {preview[:4000]}"
             await log_activity(
                 event_type=event,
                 job_name=job_name,

@@ -140,6 +140,9 @@
       "skipped": "übersprungen",
       "total": "gesamt"
     },
+    "lastRunFailed": "Letzter Lauf fehlgeschlagen",
+    "errorSkippedNoCopiesHint": "Einige Pfade sind fehlgeschlagen, während der Rest übersprungen wurde (bereits aktuell). Details siehe unten.",
+    "errorDetailsMissing": "Für diesen Lauf wurden keine Fehlerdetails gespeichert. Prüfen Sie die Log-Seite oder die Backend-Protokolle.",
     "actions": {
       "running": "Läuft...",
       "runNow": "Jetzt starten",

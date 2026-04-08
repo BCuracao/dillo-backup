@@ -85,6 +85,11 @@ export default function JobCard({ job, onMutate, onEdit }: JobCardProps) {
   const scheduleLabel = describeCron(job.schedule_cron, t, tSchedule);
   const isRunning = logStatus === "RUNNING" || running;
 
+  const errorSkippedNoCopies =
+    job.latest_log?.status === "ERROR" &&
+    job.latest_log.files_processed === 0 &&
+    job.latest_log.files_skipped > 0;
+
   const handleTogglePause = async () => {
     setMenuOpen(false);
     try {
@@ -294,6 +299,20 @@ export default function JobCard({ job, onMutate, onEdit }: JobCardProps) {
             </strong>{" "}
             {t("stats.total")}
           </span>
+        </div>
+      )}
+
+      {job.latest_log?.status === "ERROR" && !isRunning && (
+        <div className="mb-4 rounded-lg border border-error/30 bg-error/5 px-3 py-2">
+          <p className="text-xs font-medium text-error/90">{t("lastRunFailed")}</p>
+          {errorSkippedNoCopies && (
+            <p className="mt-1.5 text-[11px] leading-snug text-muted">
+              {t("errorSkippedNoCopiesHint")}
+            </p>
+          )}
+          <pre className="mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-[11px] text-foreground/85">
+            {(job.latest_log.error_message && job.latest_log.error_message.trim()) || t("errorDetailsMissing")}
+          </pre>
         </div>
       )}
 

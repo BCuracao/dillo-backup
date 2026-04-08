@@ -140,6 +140,9 @@
       "skipped": "skipped",
       "total": "total"
     },
+    "lastRunFailed": "Last run failed",
+    "errorSkippedNoCopiesHint": "Some paths failed while the rest were skipped (already up to date). See errors below.",
+    "errorDetailsMissing": "No error details were stored for this run. Check the Logs page or backend log files.",
     "actions": {
       "running": "Running...",
       "runNow": "Run Now",
