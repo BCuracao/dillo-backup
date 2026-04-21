@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "Dillo",
-    "description": "Ein robustes lokales Backup-Verwaltungssystem."
+    "title": "Dillo Backup",
+    "description": "Dillo Backup — ein robustes lokales Backup-Verwaltungssystem."
   },
   "dashboard": {
     "title": "Übersicht",
@@ -22,15 +22,15 @@
     "createFirstJob": "Ersten Auftrag erstellen"
   },
   "sidebar": {
-    "brand": "Dillo",
-    "brandSub": "Backup-Manager",
+    "brand": "Dillo Backup",
+    "brandSub": "",
     "nav": {
       "dashboard": "Übersicht",
       "drives": "Laufwerke",
       "logs": "Protokolle",
       "settings": "Einstellungen"
     },
-    "version": "v0.1.0 · Lokaler Modus"
+    "version": "v1.0.0 · Lokaler Modus"
   },
   "createJob": {
     "title": "Backup-Auftrag erstellen",
@@ -245,7 +245,7 @@
   },
   "autoStart": {
     "label": "Beim Systemstart starten",
-    "description": "Dillo automatisch beim Anmelden starten.",
+    "description": "Dillo Backup automatisch beim Anmelden starten.",
     "enabled": "Aktiviert",
     "disabled": "Deaktiviert"
   },

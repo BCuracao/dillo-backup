@@ -1,8 +1,8 @@
-"""Cross-platform auto-start management for Dillo.
+"""Cross-platform auto-start management for Dillo Backup.
 
 Windows : HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run registry key
 macOS   : ~/Library/LaunchAgents/com.dillo.backup.plist  (LaunchAgent)
-Linux   : ~/.config/autostart/dillo.desktop              (XDG autostart)
+Linux   : ~/.config/autostart/dillo-backup.desktop       (XDG autostart)
 """
 
 from __future__ import annotations
@@ -15,9 +15,10 @@ from pathlib import Path
 
 logger = logging.getLogger("dillo.autostart")
 
-_APP_ID = "Dillo"
+_APP_ID = "DilloBackup"
 _MACOS_LABEL = "com.dillo.backup"
-_LINUX_DESKTOP_ID = "dillo"
+_LINUX_DESKTOP_ID = "dillo-backup"
+_MACOS_LOG_DIR_NAME = "Dillo Backup"
 
 
 def _get_exe_path() -> Path | None:
@@ -34,13 +35,17 @@ def _get_exe_path() -> Path | None:
 
     # Layout (Windows/Linux portable + macOS .app):
     #   {install}/backend/dillo-backend/dillo-backend(.exe)
-    #   {App}.app/Contents/MacOS/Dillo   ← launcher (bundled GUI entry)
+    #   {App}.app/Contents/MacOS/DilloBackup   ← launcher (bundled GUI entry)
     #   {App}.app/Contents/MacOS/backend/dillo-backend/dillo-backend
     # Three parents up from the backend binary: install root (Win/Linux) or
     # Contents/MacOS (macOS) — in both cases the launcher is alongside backend/.
     if exe.parent.name == "dillo-backend":
         root = exe.parent.parent.parent
-        launcher = (root / "Dillo.exe") if sys.platform == "win32" else (root / "Dillo")
+        launcher = (
+            (root / "DilloBackup.exe")
+            if sys.platform == "win32"
+            else (root / "DilloBackup")
+        )
         if launcher.is_file():
             return launcher.resolve()
 
@@ -121,16 +126,17 @@ def _macos_set_enabled(enabled: bool) -> bool:
             if exe is None:
                 logger.warning("Cannot enable autostart: not running from a frozen executable.")
                 return False
+            log_dir = Path.home() / "Library" / "Logs" / _MACOS_LOG_DIR_NAME
             plist_data = {
                 "Label": _MACOS_LABEL,
                 "ProgramArguments": [str(exe)],
                 "RunAtLoad": True,
                 "KeepAlive": False,
-                "StandardOutPath": str(Path.home() / "Library" / "Logs" / "Dillo" / "launcher.log"),
-                "StandardErrorPath": str(Path.home() / "Library" / "Logs" / "Dillo" / "launcher.err"),
+                "StandardOutPath": str(log_dir / "launcher.log"),
+                "StandardErrorPath": str(log_dir / "launcher.err"),
             }
             plist_path.parent.mkdir(parents=True, exist_ok=True)
-            (Path.home() / "Library" / "Logs" / "Dillo").mkdir(parents=True, exist_ok=True)
+            log_dir.mkdir(parents=True, exist_ok=True)
             with open(plist_path, "wb") as f:
                 plistlib.dump(plist_data, f)
             logger.info("macOS LaunchAgent created: %s", plist_path)
@@ -167,7 +173,7 @@ def _linux_set_enabled(enabled: bool) -> bool:
             desktop_path.write_text(
                 f"[Desktop Entry]\n"
                 f"Type=Application\n"
-                f"Name=Dillo Backup Manager\n"
+                f"Name=Dillo Backup\n"
                 f"Exec={exe}\n"
                 f"Hidden=false\n"
                 f"NoDisplay=false\n"
@@ -188,7 +194,7 @@ def _linux_set_enabled(enabled: bool) -> bool:
 
 
 def is_autostart_enabled() -> bool:
-    """Check whether Dillo is configured to start on boot."""
+    """Check whether Dillo Backup is configured to start on boot."""
     if sys.platform == "win32":
         return _win_get_enabled()
     elif sys.platform == "darwin":

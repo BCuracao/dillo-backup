@@ -1,10 +1,10 @@
-"""Dillo — Windows build script.
+"""Dillo Backup — Windows build script.
 
 Orchestrates the full build pipeline:
   1. Build the Python backend into a standalone exe (PyInstaller)
   2. Build the Next.js frontend in standalone mode
   3. Download a portable Node.js runtime
-  4. Bundle the launcher into a standalone exe
+  4. Bundle the launcher into a standalone exe (DilloBackup.exe)
   5. Assemble everything into dist/dillo/
   6. (Optional) Compile the Inno Setup installer
 
@@ -15,6 +15,9 @@ Prerequisites:
 
 Usage:
   python installer/build_windows.py [--skip-inno] [--node-version 22.14.0]
+
+Output:
+  dist/installer/Dillo-Backup-Setup-1.0.0.exe
 """
 
 from __future__ import annotations
@@ -269,7 +272,7 @@ def build_launcher() -> None:
     cmd = [
         str(pyinstaller),
         str(INSTALLER_DIR / "launcher.py"),
-        "--name", "Dillo",
+        "--name", "DilloBackup",
         "--onefile",
         "--windowed",
         "--distpath", str(DIST_DIR),
@@ -292,7 +295,7 @@ def compile_inno() -> None:
     log.info("STEP 5: Compiling Inno Setup installer")
     log.info("=" * 60)
 
-    iss_file = INSTALLER_DIR / "dillo.iss"
+    iss_file = INSTALLER_DIR / "dillo-backup.iss"
     if not iss_file.exists():
         log.error("Inno Setup script not found at %s", iss_file)
         sys.exit(1)
@@ -326,12 +329,12 @@ def compile_inno() -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build Dillo for Windows")
+    parser = argparse.ArgumentParser(description="Build Dillo Backup for Windows")
     parser.add_argument("--skip-inno", action="store_true", help="Skip Inno Setup compilation")
     parser.add_argument("--node-version", default=NODE_VERSION_DEFAULT, help="Node.js version to bundle")
     args = parser.parse_args()
 
-    log.info("Dillo Windows Build")
+    log.info("Dillo Backup — Windows Build")
     log.info("Project root: %s", PROJECT_ROOT)
     log.info("Distribution: %s", DIST_DIR)
 

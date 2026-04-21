@@ -1,7 +1,7 @@
-"""Dillo Launcher — starts both backend and frontend, opens the browser.
+"""Dillo Backup Launcher — starts both backend and frontend, opens the browser.
 
 This script is the main entry point for the installed application.
-It is bundled into dillo.exe via PyInstaller (--onefile --windowed).
+It is bundled into DilloBackup.exe via PyInstaller (--onefile --windowed).
 """
 
 from __future__ import annotations
@@ -179,12 +179,12 @@ def main() -> None:
 
     # ── Ensure data directory exists ──────────────────────────────────
     if sys.platform == "darwin":
-        data_dir = Path.home() / "Library" / "Application Support" / "Dillo"
+        data_dir = Path.home() / "Library" / "Application Support" / "Dillo Backup"
     elif sys.platform == "win32":
-        data_dir = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "Dillo"
+        data_dir = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "DilloBackup"
     else:
         xdg = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
-        data_dir = Path(xdg) / "dillo"
+        data_dir = Path(xdg) / "dillo-backup"
     data_dir.mkdir(parents=True, exist_ok=True)
     log.info("Data directory: %s", data_dir)
 
@@ -237,7 +237,7 @@ def main() -> None:
 
     # ── Open browser ──────────────────────────────────────────────────
     _open_browser(frontend_url)
-    log.info("Dillo is running. Close this window to stop.")
+    log.info("Dillo Backup is running. Close this window to stop.")
 
     # ── Wait for either process to exit ───────────────────────────────
     try:

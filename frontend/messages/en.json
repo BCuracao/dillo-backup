@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "Dillo",
-    "description": "A robust local backup management system."
+    "title": "Dillo Backup",
+    "description": "Dillo Backup — a robust local backup management system."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -22,15 +22,15 @@
     "createFirstJob": "Create your first job"
   },
   "sidebar": {
-    "brand": "Dillo",
-    "brandSub": "Backup Manager",
+    "brand": "Dillo Backup",
+    "brandSub": "",
     "nav": {
       "dashboard": "Dashboard",
       "drives": "Drives",
       "logs": "Logs",
       "settings": "Settings"
     },
-    "version": "v0.1.0 · Local Mode"
+    "version": "v1.0.0 · Local Mode"
   },
   "createJob": {
     "title": "Create Backup Job",
@@ -245,7 +245,7 @@
   },
   "autoStart": {
     "label": "Start on boot",
-    "description": "Launch Dillo automatically when you log in.",
+    "description": "Launch Dillo Backup automatically when you log in.",
     "enabled": "Enabled",
     "disabled": "Disabled"
   },

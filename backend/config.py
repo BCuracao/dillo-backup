@@ -22,14 +22,14 @@ def _resolve_data_dir() -> Path:
     """Per-platform user data directory in production, backend/ in dev."""
     if IS_FROZEN:
         if sys.platform == "darwin":
-            data_dir = Path.home() / "Library" / "Application Support" / "Dillo"
+            data_dir = Path.home() / "Library" / "Application Support" / "Dillo Backup"
         elif sys.platform == "win32":
             root = Path(os.environ.get("LOCALAPPDATA", str(Path.home())))
-            data_dir = root / "Dillo"
+            data_dir = root / "DilloBackup"
         else:
             # Linux / other: XDG_DATA_HOME or ~/.local/share
             xdg = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
-            data_dir = Path(xdg) / "dillo"
+            data_dir = Path(xdg) / "dillo-backup"
     else:
         data_dir = Path(__file__).resolve().parent
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -46,7 +46,7 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    app_name: str = "Dillo"
+    app_name: str = "Dillo Backup"
     database_url: str = f"sqlite+aiosqlite:///{DATA_DIR / 'backups.db'}"
     cors_origins: list[str] = [
         "http://localhost:3000",

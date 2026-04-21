@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────
-#  Dillo — macOS build script
+#  Dillo Backup — macOS build script
 #
 #  Orchestrates the full build pipeline:
 #    1. Build the Python backend into a standalone binary (PyInstaller)
 #    2. Build the Next.js frontend in standalone mode
 #    3. Download a portable Node.js runtime (macOS arm64/x64)
-#    4. Bundle the launcher into a standalone binary
-#    5. Assemble everything into dist/Dillo.app
+#    4. Bundle the launcher into a standalone binary (DilloBackup)
+#    5. Assemble everything into "dist/Dillo Backup.app"
 #
 #  Prerequisites:
 #    - Python 3.12+ on PATH (with pip)
@@ -25,7 +25,13 @@ BACKEND_DIR="$PROJECT_ROOT/backend"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 INSTALLER_DIR="$PROJECT_ROOT/installer"
 DIST_DIR="$PROJECT_ROOT/dist/dillo-mac"
-APP_BUNDLE="$PROJECT_ROOT/dist/Dillo.app"
+
+APP_BUNDLE_NAME="Dillo Backup"
+APP_EXECUTABLE_NAME="DilloBackup"
+APP_IDENTIFIER="com.dillo.backup"
+DMG_VOLUME_NAME="Dillo Backup"
+APP_BUNDLE="$PROJECT_ROOT/dist/${APP_BUNDLE_NAME}.app"
+
 NODE_VERSION="${1:-22.14.0}"
 
 # Detect architecture
@@ -203,7 +209,7 @@ build_launcher() {
     # shellcheck disable=SC2086
     "$PYINSTALLER" \
         "$INSTALLER_DIR/launcher.py" \
-        --name Dillo \
+        --name "$APP_EXECUTABLE_NAME" \
         --onefile --console \
         --distpath "$DIST_DIR" \
         --workpath "$PROJECT_ROOT/build/launcher" \
@@ -228,24 +234,24 @@ assemble_app_bundle() {
 
     mkdir -p "$MACOS_DIR" "$RESOURCES"
 
-    # Info.plist
-    cat > "$CONTENTS/Info.plist" << 'PLIST'
+    # Info.plist (heredoc uses variable expansion)
+    cat > "$CONTENTS/Info.plist" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>Dillo</string>
+    <string>${APP_BUNDLE_NAME}</string>
     <key>CFBundleDisplayName</key>
-    <string>Dillo Backup Manager</string>
+    <string>${APP_BUNDLE_NAME}</string>
     <key>CFBundleIdentifier</key>
-    <string>com.dillo.backup</string>
+    <string>${APP_IDENTIFIER}</string>
     <key>CFBundleVersion</key>
     <string>1.0.0</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0.0</string>
     <key>CFBundleExecutable</key>
-    <string>Dillo</string>
+    <string>${APP_EXECUTABLE_NAME}</string>
     <key>CFBundleIconFile</key>
     <string>dillo</string>
     <key>CFBundlePackageType</key>
@@ -259,8 +265,8 @@ assemble_app_bundle() {
 PLIST
 
     # Copy built artefacts into the app bundle
-    cp "$DIST_DIR/Dillo" "$MACOS_DIR/Dillo"
-    chmod +x "$MACOS_DIR/Dillo"
+    cp "$DIST_DIR/$APP_EXECUTABLE_NAME" "$MACOS_DIR/$APP_EXECUTABLE_NAME"
+    chmod +x "$MACOS_DIR/$APP_EXECUTABLE_NAME"
 
     # Backend / frontend / node live in Resources (see launcher.py + Gatekeeper).
     cp -R "$DIST_DIR/backend" "$RESOURCES/backend"
@@ -289,7 +295,7 @@ create_dmg() {
     log "STEP 6: Creating DMG"
     log "============================================================"
 
-    DMG_OUTPUT="$PROJECT_ROOT/dist/installer/Dillo-1.0.0.dmg"
+    DMG_OUTPUT="$PROJECT_ROOT/dist/installer/Dillo-Backup-1.0.0.dmg"
     STAGING="$PROJECT_ROOT/build/dmg-staging"
 
     mkdir -p "$(dirname "$DMG_OUTPUT")"
@@ -297,11 +303,11 @@ create_dmg() {
     rm -rf "$STAGING"
     mkdir -p "$STAGING"
 
-    cp -R "$APP_BUNDLE" "$STAGING/Dillo.app"
+    cp -R "$APP_BUNDLE" "$STAGING/${APP_BUNDLE_NAME}.app"
     ln -s /Applications "$STAGING/Applications"
 
     hdiutil create \
-        -volname "Dillo" \
+        -volname "$DMG_VOLUME_NAME" \
         -srcfolder "$STAGING" \
         -ov \
         -format UDZO \
@@ -322,7 +328,7 @@ for arg in "$@"; do
 done
 
 main() {
-    log "Dillo macOS Build"
+    log "Dillo Backup — macOS Build"
     log "Project root: $PROJECT_ROOT"
     log "Distribution: $DIST_DIR"
 
@@ -343,7 +349,7 @@ main() {
     log "BUILD COMPLETE"
     log "App bundle: $APP_BUNDLE"
     if [ "$SKIP_DMG" = false ]; then
-        log "DMG: $PROJECT_ROOT/dist/installer/Dillo-1.0.0.dmg"
+        log "DMG: $PROJECT_ROOT/dist/installer/Dillo-Backup-1.0.0.dmg"
     fi
     log "============================================================"
 }

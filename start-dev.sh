@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────
-#  Dillo — Development Launcher (Unix)
+#  Dillo Backup — Development Launcher (Unix)
 #  Starts both the FastAPI backend and Next.js frontend.
 # ─────────────────────────────────────────────────────
 set -euo pipefail
@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo ""
 echo "  ========================================"
-echo "   Dillo — Dev Launcher"
+echo "   Dillo Backup — Dev Launcher"
 echo "  ========================================"
 echo ""
 

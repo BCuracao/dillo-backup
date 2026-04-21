@@ -1,12 +1,12 @@
-"""Dillo — macOS build script.
+"""Dillo Backup — macOS build script.
 
 Orchestrates the full build pipeline:
   1. Build the Python backend into a standalone binary (PyInstaller)
   2. Build the Next.js frontend in standalone mode
   3. Download a portable Node.js runtime (macOS arm64/x64)
-  4. Bundle the launcher into a standalone binary
-  5. Assemble everything into Dillo.app
-  6. Create a distributable .dmg
+  4. Bundle the launcher into a standalone binary (DilloBackup)
+  5. Assemble everything into "Dillo Backup.app"
+  6. Create a distributable .dmg (volume name: "Dillo Backup")
 
 Prerequisites:
   - Python 3.12+ on PATH (with pip)
@@ -15,6 +15,10 @@ Prerequisites:
 
 Usage:
   python installer/build_macos.py [--node-version 22.14.0] [--skip-dmg]
+
+Output:
+  dist/Dillo Backup.app
+  dist/installer/Dillo-Backup-1.0.0.dmg
 """
 
 from __future__ import annotations
@@ -45,15 +49,19 @@ FRONTEND_DIR = PROJECT_ROOT / "frontend"
 INSTALLER_DIR = PROJECT_ROOT / "installer"
 ASSETS_DIR = INSTALLER_DIR / "assets"
 DIST_DIR = PROJECT_ROOT / "dist" / "dillo-mac"
-APP_BUNDLE = PROJECT_ROOT / "dist" / "Dillo.app"
-DMG_OUTPUT = PROJECT_ROOT / "dist" / "installer" / "Dillo-1.0.0.dmg"
+APP_BUNDLE = PROJECT_ROOT / "dist" / "Dillo Backup.app"
+DMG_OUTPUT = PROJECT_ROOT / "dist" / "installer" / "Dillo-Backup-1.0.0.dmg"
 
 NODE_VERSION_DEFAULT = "22.14.0"
 MACHINE = platform.machine()
 NODE_ARCH = "arm64" if MACHINE == "arm64" else "x64"
 
 APP_VERSION = "1.0.0"
+APP_DISPLAY_NAME = "Dillo Backup"
+APP_BUNDLE_NAME = "Dillo Backup"
+APP_EXECUTABLE_NAME = "DilloBackup"
 APP_IDENTIFIER = "com.dillo.backup"
+DMG_VOLUME_NAME = "Dillo Backup"
 
 
 def run(cmd: list[str], cwd: Path | None = None, env: dict | None = None) -> None:
@@ -244,7 +252,7 @@ def build_launcher() -> None:
     cmd = [
         str(pyinstaller),
         str(INSTALLER_DIR / "launcher.py"),
-        "--name", "Dillo",
+        "--name", APP_EXECUTABLE_NAME,
         "--onefile", "--windowed",
         "--distpath", str(DIST_DIR),
         "--workpath", str(PROJECT_ROOT / "build" / "launcher"),
@@ -276,12 +284,12 @@ def assemble_app_bundle() -> None:
 
     # Info.plist
     plist = {
-        "CFBundleName": "Dillo",
-        "CFBundleDisplayName": "Dillo Backup Manager",
+        "CFBundleName": APP_BUNDLE_NAME,
+        "CFBundleDisplayName": APP_DISPLAY_NAME,
         "CFBundleIdentifier": APP_IDENTIFIER,
         "CFBundleVersion": APP_VERSION,
         "CFBundleShortVersionString": APP_VERSION,
-        "CFBundleExecutable": "Dillo",
+        "CFBundleExecutable": APP_EXECUTABLE_NAME,
         "CFBundleIconFile": "dillo",
         "CFBundlePackageType": "APPL",
         "LSMinimumSystemVersion": "12.0",
@@ -291,13 +299,13 @@ def assemble_app_bundle() -> None:
         plistlib.dump(plist, f)
 
     # Copy built artefacts
-    launcher_bin = DIST_DIR / "Dillo"
+    launcher_bin = DIST_DIR / APP_EXECUTABLE_NAME
     if not launcher_bin.exists():
         log.error("Launcher binary not found at %s", launcher_bin)
         sys.exit(1)
 
-    shutil.copy2(launcher_bin, macos_dir / "Dillo")
-    os.chmod(macos_dir / "Dillo", 0o755)
+    shutil.copy2(launcher_bin, macos_dir / APP_EXECUTABLE_NAME)
+    os.chmod(macos_dir / APP_EXECUTABLE_NAME, 0o755)
 
     # Ship backend / frontend / node under Resources (not MacOS) so codesign
     # does not treat node_modules and other data as signed code.
@@ -354,7 +362,7 @@ def create_dmg() -> None:
     staging.mkdir(parents=True)
 
     # Copy .app into staging area
-    shutil.copytree(APP_BUNDLE, staging / "Dillo.app", symlinks=True)
+    shutil.copytree(APP_BUNDLE, staging / f"{APP_BUNDLE_NAME}.app", symlinks=True)
 
     # Create a symlink to /Applications for drag-to-install
     os.symlink("/Applications", staging / "Applications")
@@ -362,7 +370,7 @@ def create_dmg() -> None:
     # Use hdiutil to create the DMG
     run([
         "hdiutil", "create",
-        "-volname", "Dillo",
+        "-volname", DMG_VOLUME_NAME,
         "-srcfolder", str(staging),
         "-ov",
         "-format", "UDZO",
@@ -379,12 +387,12 @@ def create_dmg() -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build Dillo for macOS")
+    parser = argparse.ArgumentParser(description="Build Dillo Backup for macOS")
     parser.add_argument("--node-version", default=NODE_VERSION_DEFAULT, help="Node.js version to bundle")
     parser.add_argument("--skip-dmg", action="store_true", help="Skip DMG creation")
     args = parser.parse_args()
 
-    log.info("Dillo macOS Build")
+    log.info("Dillo Backup — macOS Build")
     log.info("Project root: %s", PROJECT_ROOT)
     log.info("Distribution: %s", DIST_DIR)
 

@@ -179,7 +179,7 @@ class BrowseResponse(BaseModel):
 class AutoStartStatusResponse(BaseModel):
     """Current state of the auto-start setting."""
 
-    enabled: bool = Field(description="True if Dillo is set to start on boot.")
+    enabled: bool = Field(description="True if Dillo Backup is set to start on boot.")
     platform: str = Field(description="Operating system identifier.")
 
 

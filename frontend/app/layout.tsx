@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dillo",
-  description: "A robust local backup management system.",
+  title: "Dillo Backup",
+  description: "Dillo Backup — a robust local backup management system.",
 };
 
 export default async function RootLayout({

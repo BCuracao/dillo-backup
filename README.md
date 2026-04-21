@@ -1,4 +1,4 @@
-# Dillo — Backup Manager
+# Dillo Backup
 
 A robust local backup management web application built with **FastAPI** (Python) and **Next.js 15** (TypeScript). Schedule and customize local data backups via a modern dark-mode browser interface.
 
@@ -92,25 +92,33 @@ npm run dev
 - **Dashboard:** [http://localhost:3000](http://localhost:3000)
 - **API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
 
-## Production Build
+## Production Build / Installation
 
 ### Windows Installer
 
+Build command:
+
 ```bash
-python installer/build_windows.py        # Full build + Inno Setup installer
+python installer/build_windows.py              # Full build + Inno Setup installer
 python installer/build_windows.py --skip-inno  # Build without installer
 ```
 
-Output: `dist/installer/DilloSetup-1.0.0.exe`
+Output: `dist/installer/Dillo-Backup-Setup-1.0.0.exe`
+
+**Installing:** Double-click `Dillo-Backup-Setup-1.0.0.exe`. The app installs by default to `C:\Program Files\Dillo Backup` and registers under "Add/Remove Programs" as **Dillo Backup**. User data is stored in `%LOCALAPPDATA%\DilloBackup`.
 
 ### macOS DMG
 
+Build command (run on a Mac):
+
 ```bash
-python installer/build_macos.py          # Full build + DMG
-./installer/build_macos.sh               # Shell script alternative
+python installer/build_macos.py         # Full build + DMG
+./installer/build_macos.sh              # Shell script alternative
 ```
 
-Output: `dist/installer/Dillo-1.0.0.dmg`
+Output: `dist/installer/Dillo-Backup-1.0.0.dmg` (mounts as **Dillo Backup**)
+
+**Installing:** Double-click the DMG and drag **Dillo Backup.app** into `/Applications`. User data is stored in `~/Library/Application Support/Dillo Backup`.
 
 ## API Endpoints
 
@@ -135,7 +143,7 @@ Output: `dist/installer/Dillo-1.0.0.dmg`
 ## Project Structure
 
 ```
-dillo/
+dillo-backup/
 ├── backend/
 │   ├── config.py                # pydantic-settings, Safety Lock config
 │   ├── database.py              # Async SQLAlchemy engine + session
@@ -163,8 +171,8 @@ dillo/
 ├── installer/
 │   ├── build_windows.py         # Windows build orchestration
 │   ├── build_macos.py           # macOS build + DMG packaging
-│   ├── launcher.py              # App launcher (→ Dillo.exe / Dillo)
-│   ├── dillo.iss                # Inno Setup installer script
+│   ├── launcher.py              # App launcher (→ DilloBackup.exe / DilloBackup)
+│   ├── dillo-backup.iss         # Inno Setup installer script
 │   └── convert_icons.py         # PNG → ICO/ICNS converter
 ├── run_production.py            # Backend PyInstaller entry point
 ├── start-dev.bat                # Windows dev launcher

@@ -1,4 +1,4 @@
-"""PyBackup Sentinel — FastAPI application entry-point."""
+"""Dillo Backup — FastAPI application entry-point."""
 
 from __future__ import annotations
 
@@ -46,8 +46,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.1.0",
-    description="A robust local backup management system.",
+    version="1.0.0",
+    description="Dillo Backup — a robust local backup management system.",
     lifespan=lifespan,
 )
 

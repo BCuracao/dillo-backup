@@ -243,7 +243,7 @@ async def validate_path(body: PathValidationRequest) -> PathValidationResponse:
 @router.get(
     "/autostart",
     response_model=AutoStartStatusResponse,
-    summary="Check if Dillo is set to auto-start on boot",
+    summary="Check if Dillo Backup is set to auto-start on boot",
 )
 async def get_autostart_status() -> AutoStartStatusResponse:
     return AutoStartStatusResponse(

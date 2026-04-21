@@ -39,7 +39,7 @@ export default function Sidebar() {
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/10 ring-1 ring-accent/20">
           <Image
             src="/dillo-logo.png"
-            alt="Dillo"
+            alt="Dillo Backup"
             width={36}
             height={36}
             className="invert brightness-200"
@@ -49,7 +49,9 @@ export default function Sidebar() {
           <h1 className="text-base font-bold tracking-tight text-foreground">
             {t("brand")}
           </h1>
-          <p className="text-xs text-muted">{t("brandSub")}</p>
+          {t("brandSub") && (
+            <p className="text-xs text-muted">{t("brandSub")}</p>
+          )}
         </div>
       </Link>
 
