@@ -73,6 +73,14 @@ ehthumbs.db
 *.swo
 *~
 
-# Keep .cursor/rules/ (project AI rules are version-controlled)
-.cursor/*
-!.cursor/rules/
+# ─── Cursor / AI agent local-only files ─────────
+# Cursor config and rules are local-only (not version-controlled)
+.cursor/
+*.mdc
+
+# ─── Internal context / agent memory (local-only) ──
+# Kept on disk for the agent to read/update, but never committed
+PROJECT_JOURNAL.md
+PRODUCT_CONTEXT.md
+AGENTS.md
+MEMORY.md
