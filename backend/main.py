@@ -13,6 +13,7 @@ from .config import settings
 from .database import init_db
 from .routers import activity, jobs, system
 from .services.activity_logger import cleanup_old_activity_logs
+from .services.drive_watcher import start_drive_watcher, stop_drive_watcher
 from .services.scheduler import start_scheduler, stop_scheduler
 
 # ── Logging ───────────────────────────────────────────────────────────
@@ -38,7 +39,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Start the cron-based backup scheduler
     start_scheduler()
     logging.getLogger("pybackup").info("Cron scheduler started.")
+    # Start the Auto-Wake drive watcher (no-op if no jobs use it)
+    start_drive_watcher()
+    logging.getLogger("pybackup").info("Drive watcher started.")
     yield
+    stop_drive_watcher()
     stop_scheduler()
 
 
@@ -46,7 +51,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(
     title=settings.app_name,
-    version="1.0.0",
+    version="1.0.3",
     description="Dillo Backup — a robust local backup management system.",
     lifespan=lifespan,
 )

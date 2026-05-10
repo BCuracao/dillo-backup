@@ -30,7 +30,7 @@
       "logs": "Logs",
       "settings": "Settings"
     },
-    "version": "v1.0.0 · Local Mode"
+    "version": "v1.0.3 · Local Mode"
   },
   "createJob": {
     "title": "Create Backup Job",
@@ -248,6 +248,38 @@
     "description": "Launch Dillo Backup automatically when you log in.",
     "enabled": "Enabled",
     "disabled": "Disabled"
+  },
+  "defaultBehavior": {
+    "section": "Default Behavior",
+    "autoWakeLabel": "Auto-start on drive connection",
+    "autoWakeDescription": "Automatically run backup jobs when their target drive is plugged in.",
+    "versioningLabel": "Default versioning limit",
+    "versioningDescription": "Number of historical versions to keep per file in .dillo-versions.",
+    "versioningOff": "Off",
+    "storageWarning": "Versioning increases storage usage on your backup drive.",
+    "loadError": "Could not load default settings.",
+    "saveError": "Failed to save default settings."
+  },
+  "jobAdvanced": {
+    "title": "Advanced",
+    "overrideAutoWake": "Override Global Auto-Wake",
+    "autoWakeHelp": "Run this job immediately when its target drive is plugged in.",
+    "autoWakeOn": "On",
+    "autoWakeOff": "Off",
+    "overrideVersioning": "Override Global Versioning",
+    "versioningHelp": "Keep this many historical versions per file in .dillo-versions on the destination.",
+    "versioningOff": "Off",
+    "storageWarning": "Versioning increases storage usage on your backup drive.",
+    "inheritsGlobal": "Inherits global setting ({value}).",
+    "sameDriveQueueInfo": "Note: Jobs on the same drive will run one after another to protect your hardware's lifespan."
+  },
+  "systemEvents": {
+    "driveDetected": "Drive detected: {drive}",
+    "autoWakeTriggered": "Drive Detected: Starting Dillo Backup for {name}...",
+    "driveJobsQueued": "Dillo Backup: {count} jobs found for drive {drive}. Starting now...",
+    "backupStarted": "Backup started: {name}",
+    "backupCompleted": "Backup complete: {name}. {count} files updated.",
+    "backupFailed": "Backup failed: {name}. Click to see logs."
   },
   "languageSwitcher": {
     "en": "English",

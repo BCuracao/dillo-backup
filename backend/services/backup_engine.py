@@ -23,8 +23,21 @@ from ..database import async_session_factory
 from ..models import BackupJob, JobLog
 from ..services.activity_logger import EventType, log_activity
 from ..services.path_validator import verify_directory_access
+from ..services.settings_service import (
+    get_global_settings,
+    resolve_versioning_limit,
+)
+from ..services.system_events import (
+    EVT_BACKUP_COMPLETED,
+    EVT_BACKUP_FAILED,
+    EVT_BACKUP_STARTED,
+    publish_event,
+)
 
 logger = logging.getLogger("pybackup.engine")
+
+# Folder name used at the destination root to store rotated file versions.
+VERSIONS_DIR_NAME = ".dillo-versions"
 
 # Thread pool shared across all backup runs
 _executor = ThreadPoolExecutor(
@@ -101,6 +114,12 @@ class BackupManager:
             job_source = job.source_path
             job_dest = job.dest_path
 
+            # Resolve effective versioning limit (per-job override → global default).
+            global_settings = await get_global_settings()
+            versioning_limit = resolve_versioning_limit(
+                job.job_versioning_limit, global_settings
+            )
+
             # Pre-flight checks (path access + safety lock).
             # Failures here used to silently vanish in the background task,
             # so we catch them and persist a proper ERROR log + activity entry.
@@ -137,6 +156,16 @@ class BackupManager:
                     job_id=job_id,
                     details=str(preflight_exc),
                 )
+                publish_event(
+                    EVT_BACKUP_FAILED,
+                    f"Backup failed: {job_name}. Click to see logs.",
+                    data={
+                        "job_id": str(job_id),
+                        "job_name": job_name,
+                        "error": str(preflight_exc),
+                        "dry_run": dry_run,
+                    },
+                )
                 report = BackupReport(job_id=job_id, dry_run=dry_run)
                 report.errors.append(str(preflight_exc))
                 report.end_time = time.monotonic()
@@ -153,6 +182,18 @@ class BackupManager:
             await session.commit()
             await session.refresh(log_entry)
 
+            # Tray-friendly "Backup started" toast (suppressed if dry-run because
+            # dry-runs are explicitly user-initiated diagnostics, not backups).
+            if not dry_run:
+                publish_event(
+                    EVT_BACKUP_STARTED,
+                    f"Backup started: {job_name}",
+                    data={
+                        "job_id": str(job_id),
+                        "job_name": job_name,
+                    },
+                )
+
             report = BackupReport(job_id=job_id, dry_run=dry_run)
 
             try:
@@ -160,6 +201,7 @@ class BackupManager:
                     source, dest, report,
                     log_entry_id=log_entry.id,
                     verify=verify_after_copy,
+                    versioning_limit=versioning_limit,
                 )
             except Exception as exc:
                 report.errors.append(f"Fatal: {exc}")
@@ -208,6 +250,36 @@ class BackupManager:
                 job_id=job_id,
                 details=details,
             )
+
+            # Tray-friendly final notification.  Dry-runs are intentionally
+            # skipped — the spec only calls for live-backup OS toasts.
+            if not dry_run:
+                if report.status == "SUCCESS":
+                    publish_event(
+                        EVT_BACKUP_COMPLETED,
+                        f"Backup complete: {job_name}. "
+                        f"{report.files_processed} files updated.",
+                        data={
+                            "job_id": str(job_id),
+                            "job_name": job_name,
+                            "files_updated": report.files_processed,
+                            "files_skipped": report.files_skipped,
+                            "size_mb": report.total_size_mb,
+                        },
+                    )
+                else:
+                    error_summary = (
+                        report.errors[0] if report.errors else "Unknown error"
+                    )
+                    publish_event(
+                        EVT_BACKUP_FAILED,
+                        f"Backup failed: {job_name}. Click to see logs.",
+                        data={
+                            "job_id": str(job_id),
+                            "job_name": job_name,
+                            "error": str(error_summary)[:500],
+                        },
+                    )
 
         return report
 
@@ -298,11 +370,14 @@ class BackupManager:
         report: BackupReport,
         log_entry_id: int | None = None,
         verify: bool = False,
+        versioning_limit: int = 0,
     ) -> None:
         """
         Walk the source tree and copy only files that are newer or
         different in size compared to the destination.
         Streams progress to the DB every _FLUSH_EVERY_N files or _FLUSH_EVERY_S seconds.
+        When *versioning_limit* > 0, existing destination files are rotated
+        into ``.dillo-versions`` instead of being silently overwritten.
         """
         loop = asyncio.get_running_loop()
 
@@ -311,13 +386,23 @@ class BackupManager:
             _executor, cls._scan_source_tree, source, dest
         )
 
+        # Track the destination paths we expect to exist for the deletion-safety pass.
+        expected_dest_paths: set[Path] = {dst for _, dst in file_pairs}
+
         # Process copies with bounded concurrency
         semaphore = asyncio.Semaphore(settings.max_concurrent_copies)
 
         async def _guarded_copy(src: Path, dst: Path) -> CopyResult:
             async with semaphore:
                 return await loop.run_in_executor(
-                    _executor, cls._copy_if_needed, src, dst, report.dry_run, verify
+                    _executor,
+                    cls._copy_if_needed,
+                    src,
+                    dst,
+                    report.dry_run,
+                    verify,
+                    versioning_limit,
+                    dest,
                 )
 
         tasks = [asyncio.ensure_future(_guarded_copy(src, dst)) for src, dst in file_pairs]
@@ -351,6 +436,21 @@ class BackupManager:
                 flush_counter = 0
                 last_flush = now
 
+        # Deletion-safety sweep: when versioning is on, files removed from the
+        # source are moved into .dillo-versions instead of being lost forever.
+        if versioning_limit > 0 and not report.dry_run:
+            try:
+                await loop.run_in_executor(
+                    _executor,
+                    cls._sweep_deleted_files,
+                    dest,
+                    expected_dest_paths,
+                    versioning_limit,
+                    report,
+                )
+            except Exception:
+                logger.exception("Deletion-safety sweep failed (non-fatal).")
+
     # ── File Scanning ─────────────────────────────────────────────────
 
     @staticmethod
@@ -381,11 +481,21 @@ class BackupManager:
     # ── Incremental Copy ──────────────────────────────────────────────
 
     @classmethod
-    def _copy_if_needed(cls, src: Path, dst: Path, dry_run: bool, verify: bool = False) -> CopyResult:
+    def _copy_if_needed(
+        cls,
+        src: Path,
+        dst: Path,
+        dry_run: bool,
+        verify: bool = False,
+        versioning_limit: int = 0,
+        dest_root: Path | None = None,
+    ) -> CopyResult:
         """
         Compare mtime + size.  Copy only when the source is newer or a
         different size.  In dry-run mode, log but don't write.
         When *verify* is True, run SHA-256 comparison after each real copy.
+        When *versioning_limit* > 0, the previous version of the destination
+        file is rotated into ``.dillo-versions`` before being overwritten.
         """
         result = CopyResult(source=src, dest=dst)
 
@@ -393,8 +503,9 @@ class BackupManager:
             src_stat = src.stat()
             result.size_bytes = src_stat.st_size
 
-            # Check if dest exists and is already up-to-date
-            if dst.exists():
+            dst_exists = dst.exists()
+
+            if dst_exists:
                 dst_stat = dst.stat()
                 same_size = src_stat.st_size == dst_stat.st_size
                 src_newer = src_stat.st_mtime > dst_stat.st_mtime
@@ -402,18 +513,27 @@ class BackupManager:
                     result.skipped = True
                     return result
 
-            # Need to copy
             if dry_run:
                 logger.info("[DRY RUN] Would copy %s -> %s", src, dst)
                 result.copied = True
                 return result
 
-            # Ensure parent directory exists
+            # Time Capsule: rotate the existing destination file into versions/
+            # before overwriting.  Errors here are warnings only; the copy still
+            # proceeds so the user does not lose the latest data.
+            if dst_exists and versioning_limit > 0 and dest_root is not None:
+                try:
+                    cls._rotate_version(dst, dest_root, versioning_limit)
+                except Exception as exc:
+                    logger.warning(
+                        "Versioning rotation failed for %s: %s (continuing copy).",
+                        dst, exc,
+                    )
+
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(str(src), str(dst))
             result.copied = True
 
-            # Post-copy SHA-256 verification
             if verify and result.copied:
                 if not cls.verify_copy(src, dst):
                     result.error = f"Verification failed (SHA-256 mismatch): {dst}"
@@ -425,6 +545,189 @@ class BackupManager:
             result.error = f"OS error copying {src}: {exc}"
 
         return result
+
+    # ── Time Capsule Versioning ───────────────────────────────────────
+
+    @staticmethod
+    def _versions_root_for(dest_root: Path) -> Path:
+        """Return the hidden versions folder that lives at the destination root."""
+        return dest_root / VERSIONS_DIR_NAME
+
+    # Timestamp format used as the top-level "snapshot" folder under
+    # ``.dillo-versions``.  Time Machine-style: each rotation creates (or
+    # reuses) a single per-second snapshot directory that mirrors the
+    # original tree layout below it.
+    _TIMESTAMP_FMT = "%Y%m%dT%H%M%S"
+
+    @classmethod
+    def _rotate_version(
+        cls, dst: Path, dest_root: Path, versioning_limit: int
+    ) -> None:
+        """
+        Move the *current* destination file into the versions folder using the
+        **Mirrored Path Strategy**:
+
+            [dest_root]/.dillo-versions/[Timestamp]/[Subfolder Path]/[Filename]
+
+        The original filename is preserved (so the archive opens with the
+        same handler as the live file) and the relative directory tree is
+        recreated below the timestamp folder — that way two different
+        ``document.txt`` files in different subfolders never collide.
+        After the move, prune older snapshots so we never exceed
+        ``versioning_limit`` historical copies of *this* file.
+        """
+        if versioning_limit <= 0:
+            return
+        if not dst.exists() or not dst.is_file():
+            return
+
+        try:
+            relative = dst.relative_to(dest_root)
+        except ValueError:
+            # File is outside the destination root somehow — bail safely.
+            return
+
+        # Skip files that already live inside the versions folder.
+        if VERSIONS_DIR_NAME in relative.parts:
+            return
+
+        versions_root = cls._versions_root_for(dest_root)
+        timestamp = datetime.now(timezone.utc).strftime(cls._TIMESTAMP_FMT)
+
+        # Pick a snapshot folder that does not already contain this exact
+        # relative path.  When two backup runs land in the same second,
+        # append a counter to the timestamp folder so we keep one snapshot
+        # per individual file event.
+        snapshot_dir = versions_root / timestamp
+        archive_path = snapshot_dir / relative
+        counter = 1
+        while archive_path.exists():
+            snapshot_dir = versions_root / f"{timestamp}_{counter}"
+            archive_path = snapshot_dir / relative
+            counter += 1
+
+        archive_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(dst), str(archive_path))
+
+        cls._prune_versions(versions_root, relative, versioning_limit)
+
+    @classmethod
+    def _prune_versions(
+        cls, versions_root: Path, relative: Path, limit: int
+    ) -> None:
+        """Keep only the *limit* newest historical versions of one file.
+
+        Walks every timestamp snapshot folder under ``versions_root`` and
+        deletes the oldest copies of *relative* beyond the configured
+        limit.  Empty snapshot directories are cleaned up as a courtesy
+        so the version tree stays tidy over time.
+        """
+        if limit <= 0 or not versions_root.exists():
+            return
+
+        try:
+            snapshot_dirs = [
+                p for p in versions_root.iterdir() if p.is_dir()
+            ]
+        except OSError:
+            return
+
+        # Match snapshots that actually contain this file.
+        matching: list[tuple[Path, Path]] = []
+        for snapshot in snapshot_dirs:
+            archive_path = snapshot / relative
+            if archive_path.is_file():
+                matching.append((snapshot, archive_path))
+
+        if len(matching) <= limit:
+            return
+
+        # Sort by mtime, newest first.
+        matching.sort(key=lambda pair: pair[1].stat().st_mtime, reverse=True)
+        for snapshot_dir, stale in matching[limit:]:
+            try:
+                stale.unlink()
+            except OSError as exc:
+                logger.debug("Could not prune old version %s: %s", stale, exc)
+                continue
+            # Walk back up the relative path and remove any now-empty
+            # parent dirs (cap at the snapshot root so we never escape).
+            cls._cleanup_empty_dirs(stale.parent, snapshot_dir)
+
+    @staticmethod
+    def _cleanup_empty_dirs(start: Path, stop_at: Path) -> None:
+        """Remove ``start`` and its parents up to (and including) ``stop_at``
+        when they are empty after a prune."""
+        current = start
+        try:
+            stop_resolved = stop_at.resolve()
+        except OSError:
+            stop_resolved = stop_at
+        while True:
+            try:
+                if current.exists() and not any(current.iterdir()):
+                    current.rmdir()
+                else:
+                    return
+            except OSError:
+                return
+            try:
+                if current.resolve() == stop_resolved:
+                    # Only remove the snapshot root itself when it became
+                    # entirely empty — keeps the snapshot list tidy without
+                    # touching siblings that still hold other files.
+                    return
+            except OSError:
+                return
+            parent = current.parent
+            if parent == current:
+                return
+            current = parent
+
+    @classmethod
+    def _sweep_deleted_files(
+        cls,
+        dest: Path,
+        expected_dest_paths: set[Path],
+        versioning_limit: int,
+        report: BackupReport,
+    ) -> None:
+        """
+        Walk the destination tree and rotate any file that no longer exists
+        in the source into the versions folder.  Skips the versions folder
+        itself to avoid infinite recursion.
+        """
+        if versioning_limit <= 0 or not dest.exists():
+            return
+
+        versions_root = cls._versions_root_for(dest)
+
+        def _walk(current: Path) -> None:
+            try:
+                with os.scandir(current) as it:
+                    for entry in it:
+                        entry_path = Path(entry.path)
+                        if entry_path == versions_root:
+                            continue
+                        try:
+                            if entry.is_dir(follow_symlinks=False):
+                                _walk(entry_path)
+                            elif entry.is_file(follow_symlinks=False):
+                                if entry_path not in expected_dest_paths:
+                                    try:
+                                        cls._rotate_version(
+                                            entry_path, dest, versioning_limit
+                                        )
+                                    except Exception as exc:
+                                        report.errors.append(
+                                            f"Versioning sweep failed for {entry_path}: {exc}"
+                                        )
+                        except OSError:
+                            continue
+            except (PermissionError, OSError) as exc:
+                logger.debug("Sweep skipped %s: %s", current, exc)
+
+        _walk(dest)
 
     # ── Safety Lock ───────────────────────────────────────────────────
 

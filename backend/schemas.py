@@ -21,6 +21,16 @@ class JobCreate(BaseModel):
         description="Cron expression for scheduling (optional).",
     )
     is_active: bool = True
+    job_auto_wake: Optional[bool] = Field(
+        default=None,
+        description="Per-job override for the global Auto-Wake setting. NULL inherits the global value.",
+    )
+    job_versioning_limit: Optional[int] = Field(
+        default=None,
+        ge=0,
+        le=50,
+        description="Per-job override for the global Time Capsule versioning limit. NULL inherits.",
+    )
 
     @field_validator("source_path", "dest_path")
     @classmethod
@@ -42,6 +52,8 @@ class JobUpdate(BaseModel):
     dest_path: Optional[str] = None
     schedule_cron: Optional[str] = None
     is_active: Optional[bool] = None
+    job_auto_wake: Optional[bool] = None
+    job_versioning_limit: Optional[int] = Field(default=None, ge=0, le=50)
 
 
 class JobLogResponse(BaseModel):
@@ -70,6 +82,8 @@ class JobResponse(BaseModel):
     dest_path: str
     schedule_cron: Optional[str] = None
     is_active: bool
+    job_auto_wake: Optional[bool] = None
+    job_versioning_limit: Optional[int] = None
     created_at: datetime
     updated_at: datetime
     latest_log: Optional[JobLogResponse] = None
@@ -209,4 +223,61 @@ class PathValidationResponse(BaseModel):
     error: Optional[str] = Field(
         default=None,
         description="Machine-readable error key when the path is not fully accessible.",
+    )
+
+
+# ── Global Settings (Auto-Wake & Time Capsule defaults) ──────────────
+
+class GlobalSettingsResponse(BaseModel):
+    """Application-wide defaults for Auto-Wake and Time Capsule features."""
+
+    global_auto_wake: bool = Field(
+        description="Default Auto-Wake setting applied to jobs that don't override it."
+    )
+    global_versioning_limit: int = Field(
+        ge=0,
+        le=50,
+        description="Default number of historical versions retained per file (0 disables Time Capsule).",
+    )
+
+    model_config = {"from_attributes": True}
+
+
+class GlobalSettingsUpdate(BaseModel):
+    """Partial update payload for global settings."""
+
+    global_auto_wake: Optional[bool] = None
+    global_versioning_limit: Optional[int] = Field(default=None, ge=0, le=50)
+
+
+# ── System Events (Toast feed for hardware/runtime events) ───────────
+
+class SystemEvent(BaseModel):
+    """Lightweight event broadcast for the frontend toast feed."""
+
+    id: int = Field(description="Monotonically increasing event id.")
+    event_type: str = Field(description="Event discriminator, e.g. DRIVE_DETECTED.")
+    message: str = Field(description="Human-readable summary suitable for a toast.")
+    timestamp: datetime
+    data: Optional[dict] = Field(
+        default=None,
+        description="Optional structured payload (drive path, job id, etc.).",
+    )
+
+
+class SystemEventListResponse(BaseModel):
+    events: list[SystemEvent]
+    last_id: int = Field(description="Latest event id seen on the server (use as next ?since).")
+
+
+# ── UI Presence (used by the tray to suppress duplicate toasts) ──────
+
+
+class DashboardPresenceResponse(BaseModel):
+    """Whether a frontend dashboard recently pinged the backend."""
+
+    visible: bool = Field(description="True if the dashboard heartbeat is fresh.")
+    seconds_since_last_heartbeat: Optional[float] = Field(
+        default=None,
+        description="Time since the last heartbeat; None if the dashboard has never pinged.",
     )

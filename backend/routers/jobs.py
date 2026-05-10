@@ -22,6 +22,7 @@ from ..schemas import (
 )
 from ..services.activity_logger import EventType, log_activity
 from ..services.backup_engine import BackupManager
+from ..services.backup_queue import derive_volume_key, get_backup_queue
 from ..services.path_validator import verify_directory_access
 
 logger = logging.getLogger("pybackup.api.jobs")
@@ -46,6 +47,8 @@ def _job_to_response(job: BackupJob) -> JobResponse:
         dest_path=job.dest_path,
         schedule_cron=job.schedule_cron,
         is_active=job.is_active,
+        job_auto_wake=job.job_auto_wake,
+        job_versioning_limit=job.job_versioning_limit,
         created_at=job.created_at,
         updated_at=job.updated_at,
         latest_log=latest_log,
@@ -106,6 +109,8 @@ async def create_job(
         dest_path=payload.dest_path,
         schedule_cron=payload.schedule_cron,
         is_active=payload.is_active,
+        job_auto_wake=payload.job_auto_wake,
+        job_versioning_limit=payload.job_versioning_limit,
     )
     db.add(job)
     await db.flush()
@@ -256,13 +261,38 @@ async def run_job(
         session=db,
     )
 
-    background_tasks.add_task(
-        BackupManager.run_backup,
-        job_id=job_id,
-        dry_run=params.dry_run,
-        force_system_drive=params.force_system_drive,
-        verify_after_copy=params.verify_after_copy,
-    )
+    # Funnel manual runs through the per-volume backup queue so two backups
+    # that target the same drive (e.g. one auto-wake + one manual) wait for
+    # each other instead of racing.  Dry-runs are exempt — they perform no
+    # writes and are typically used for diagnostics.
+    if params.dry_run:
+        background_tasks.add_task(
+            BackupManager.run_backup,
+            job_id=job_id,
+            dry_run=True,
+            force_system_drive=params.force_system_drive,
+            verify_after_copy=params.verify_after_copy,
+        )
+    else:
+        bound_id = job_id
+        bound_name = job.name
+        force = params.force_system_drive
+        verify = params.verify_after_copy
+
+        async def _enqueue() -> None:
+            await get_backup_queue().enqueue(
+                volume_key=derive_volume_key(job.dest_path),
+                job_id=bound_id,
+                job_name=bound_name,
+                factory=lambda: BackupManager.run_backup(
+                    job_id=bound_id,
+                    dry_run=False,
+                    force_system_drive=force,
+                    verify_after_copy=verify,
+                ),
+            )
+
+        background_tasks.add_task(_enqueue)
 
     return {"message": f"Backup job '{job.name}' queued ({mode})."}
 

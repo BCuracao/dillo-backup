@@ -16,14 +16,29 @@ from ..schemas import (
     AutoStartRequest,
     AutoStartStatusResponse,
     BrowseResponse,
+    DashboardPresenceResponse,
     DirectoryEntry,
     DriveInfo,
+    GlobalSettingsResponse,
+    GlobalSettingsUpdate,
     PathValidationRequest,
     PathValidationResponse,
     SystemDrivesResponse,
+    SystemEvent,
+    SystemEventListResponse,
 )
 from ..services.autostart import is_autostart_enabled, set_autostart
 from ..services.path_validator import verify_directory_access
+from ..services.settings_service import (
+    get_global_settings,
+    update_global_settings,
+)
+from ..services.system_events import fetch_events_since
+from ..services.ui_presence import (
+    is_dashboard_visible,
+    mark_dashboard_visible,
+    seconds_since_last_heartbeat,
+)
 
 logger = logging.getLogger("pybackup.api.system")
 
@@ -267,6 +282,94 @@ async def update_autostart(body: AutoStartRequest) -> AutoStartStatusResponse:
     return AutoStartStatusResponse(
         enabled=is_autostart_enabled(),
         platform=platform.system().lower(),
+    )
+
+
+@router.get(
+    "/global-settings",
+    response_model=GlobalSettingsResponse,
+    summary="Read application-wide defaults (Auto-Wake & Time Capsule)",
+)
+async def read_global_settings() -> GlobalSettingsResponse:
+    snapshot = await get_global_settings()
+    return GlobalSettingsResponse(
+        global_auto_wake=snapshot.global_auto_wake,
+        global_versioning_limit=snapshot.global_versioning_limit,
+    )
+
+
+@router.put(
+    "/global-settings",
+    response_model=GlobalSettingsResponse,
+    summary="Update application-wide defaults",
+)
+async def write_global_settings(payload: GlobalSettingsUpdate) -> GlobalSettingsResponse:
+    try:
+        snapshot = await update_global_settings(
+            global_auto_wake=payload.global_auto_wake,
+            global_versioning_limit=payload.global_versioning_limit,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return GlobalSettingsResponse(
+        global_auto_wake=snapshot.global_auto_wake,
+        global_versioning_limit=snapshot.global_versioning_limit,
+    )
+
+
+@router.get(
+    "/events",
+    response_model=SystemEventListResponse,
+    summary="Poll for new runtime system events (toast feed)",
+)
+async def list_system_events(since: int = 0) -> SystemEventListResponse:
+    """
+    Return events with id > *since*.  Pass back the response's ``last_id`` as
+    the next ``?since=`` value to receive a strict, no-duplicate stream.
+    """
+    events, latest_id = fetch_events_since(since)
+    return SystemEventListResponse(
+        events=[
+            SystemEvent(
+                id=e.id,
+                event_type=e.event_type,
+                message=e.message,
+                timestamp=e.timestamp,
+                data=e.data,
+            )
+            for e in events
+        ],
+        last_id=latest_id,
+    )
+
+
+@router.post(
+    "/heartbeat",
+    response_model=DashboardPresenceResponse,
+    summary="Mark the dashboard as currently visible (frontend liveness ping)",
+)
+async def dashboard_heartbeat() -> DashboardPresenceResponse:
+    """The frontend pings this on a short interval while it is mounted.
+
+    The system tray uses ``GET /api/system/presence`` to decide whether
+    to show OS-native toasts (suppressed when the dashboard is open).
+    """
+    mark_dashboard_visible()
+    return DashboardPresenceResponse(
+        visible=True,
+        seconds_since_last_heartbeat=0.0,
+    )
+
+
+@router.get(
+    "/presence",
+    response_model=DashboardPresenceResponse,
+    summary="Check whether a dashboard is currently visible",
+)
+async def dashboard_presence() -> DashboardPresenceResponse:
+    return DashboardPresenceResponse(
+        visible=is_dashboard_visible(),
+        seconds_since_last_heartbeat=seconds_since_last_heartbeat(),
     )
 
 

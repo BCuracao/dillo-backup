@@ -16,9 +16,11 @@ import JobCard from "@/components/JobCard";
 import CreateJobModal from "@/components/CreateJobModal";
 import EditJobModal from "@/components/EditJobModal";
 import DriveCard from "@/components/DriveCard";
+import { useToast } from "@/components/ToastProvider";
 import { useBackupJobs } from "@/hooks/useBackupJobs";
+import { useSystemEvents } from "@/hooks/useSystemEvents";
 import { fetchDrives } from "@/lib/api";
-import type { BackupJob, DriveInfo } from "@/lib/types";
+import type { BackupJob, DriveInfo, SystemEvent } from "@/lib/types";
 
 export default function DashboardPage() {
   const { jobs, total, loading, error, refresh } = useBackupJobs();
@@ -27,12 +29,66 @@ export default function DashboardPage() {
   const [drives, setDrives] = useState<DriveInfo[]>([]);
   const [mutationSignal, setMutationSignal] = useState(0);
   const t = useTranslations("dashboard");
+  const tEvents = useTranslations("systemEvents");
+  const { addToast } = useToast();
 
   /** Refresh jobs list AND notify ActivityFeed of the change. */
   const handleMutation = useCallback(async () => {
     await refresh();
     setMutationSignal((prev) => prev + 1);
   }, [refresh]);
+
+  // Surface backend hardware events (Auto-Wake) as toasts.
+  const handleSystemEvent = useCallback(
+    (event: SystemEvent) => {
+      if (event.event_type === "DRIVE_JOBS_QUEUED") {
+        // Single aggregated toast: "X jobs found for drive D:. Starting now..."
+        const drive = (event.data?.drive as string | undefined) ?? "";
+        const count = (event.data?.count as number | undefined) ?? 0;
+        addToast(
+          "info",
+          drive && count
+            ? tEvents("driveJobsQueued", { drive, count })
+            : event.message,
+        );
+        handleMutation();
+      } else if (event.event_type === "AUTO_WAKE_TRIGGERED") {
+        // Per-job auto-wake toast suppressed — DRIVE_JOBS_QUEUED above already
+        // announces the batch.  Still refresh so the RUNNING badge appears.
+        handleMutation();
+      } else if (event.event_type === "DRIVE_DETECTED") {
+        const drive = (event.data?.drive as string | undefined) ?? "";
+        addToast(
+          "info",
+          drive ? tEvents("driveDetected", { drive }) : event.message,
+        );
+        fetchDrives()
+          .then((res) => setDrives(res.drives))
+          .catch(() => {
+            /* ignore */
+          });
+      } else if (event.event_type === "BACKUP_COMPLETED") {
+        // Refresh job list so the SUCCESS badge appears immediately.
+        handleMutation();
+      } else if (event.event_type === "BACKUP_FAILED") {
+        const jobName =
+          (event.data?.job_name as string | undefined) ?? "";
+        addToast(
+          "error",
+          jobName
+            ? tEvents("backupFailed", { name: jobName })
+            : event.message,
+        );
+        handleMutation();
+      } else if (event.event_type === "BACKUP_STARTED") {
+        // Just refresh — the in-browser RUNNING badge is enough; an extra
+        // toast for every backup start would be noisy.
+        handleMutation();
+      }
+    },
+    [addToast, tEvents, handleMutation],
+  );
+  useSystemEvents(handleSystemEvent);
 
   useEffect(() => {
     fetchDrives()

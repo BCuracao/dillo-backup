@@ -7,7 +7,7 @@
 ; ─────────────────────────────────────────────────────────────────────
 
 #define MyAppName "Dillo Backup"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.3"
 #define MyAppPublisher "Dillo Backup"
 #define MyAppURL "https://github.com/dillo-backup"
 #define MyAppExeName "DilloBackup.exe"
@@ -79,7 +79,7 @@ begin
     if MsgBox('Do you want to remove all Dillo Backup user data (backups database, logs)?',
               mbConfirmation, MB_YESNO) = IDYES then
     begin
-      DelTree(ExpandConstant('{localappdata}\DilloBackup'), True, True, True);
+      DelTree(ExpandConstant('{localappdata}\Dillo Backup'), True, True, True);
     end;
   end;
 end;

@@ -30,7 +30,7 @@
       "logs": "Protokolle",
       "settings": "Einstellungen"
     },
-    "version": "v1.0.0 · Lokaler Modus"
+    "version": "v1.0.3 · Lokaler Modus"
   },
   "createJob": {
     "title": "Backup-Auftrag erstellen",
@@ -248,6 +248,38 @@
     "description": "Dillo Backup automatisch beim Anmelden starten.",
     "enabled": "Aktiviert",
     "disabled": "Deaktiviert"
+  },
+  "defaultBehavior": {
+    "section": "Standardverhalten",
+    "autoWakeLabel": "Bei Laufwerksanschluss starten",
+    "autoWakeDescription": "Backup-Aufträge automatisch starten, wenn das Ziel-Laufwerk angeschlossen wird.",
+    "versioningLabel": "Standard-Versionslimit",
+    "versioningDescription": "Anzahl historischer Versionen pro Datei in .dillo-versions.",
+    "versioningOff": "Aus",
+    "storageWarning": "Versionierung erhöht den Speicherbedarf auf dem Backup-Laufwerk.",
+    "loadError": "Standardeinstellungen konnten nicht geladen werden.",
+    "saveError": "Standardeinstellungen konnten nicht gespeichert werden."
+  },
+  "jobAdvanced": {
+    "title": "Erweitert",
+    "overrideAutoWake": "Globalen Auto-Wake überschreiben",
+    "autoWakeHelp": "Diesen Auftrag sofort ausführen, wenn das Ziel-Laufwerk angeschlossen wird.",
+    "autoWakeOn": "Ein",
+    "autoWakeOff": "Aus",
+    "overrideVersioning": "Globale Versionierung überschreiben",
+    "versioningHelp": "So viele historische Versionen pro Datei in .dillo-versions am Ziel aufbewahren.",
+    "versioningOff": "Aus",
+    "storageWarning": "Versionierung erhöht den Speicherbedarf auf dem Backup-Laufwerk.",
+    "inheritsGlobal": "Übernimmt globale Einstellung ({value}).",
+    "sameDriveQueueInfo": "Hinweis: Aufträge auf demselben Laufwerk werden nacheinander ausgeführt, um die Lebensdauer Ihrer Hardware zu schonen."
+  },
+  "systemEvents": {
+    "driveDetected": "Laufwerk erkannt: {drive}",
+    "autoWakeTriggered": "Laufwerk erkannt: Starte Dillo Backup für {name}...",
+    "driveJobsQueued": "Dillo Backup: {count} Aufträge für Laufwerk {drive} gefunden. Wird gestartet...",
+    "backupStarted": "Backup gestartet: {name}",
+    "backupCompleted": "Backup abgeschlossen: {name}. {count} Dateien aktualisiert.",
+    "backupFailed": "Backup fehlgeschlagen: {name}. Klicken Sie für die Protokolle."
   },
   "languageSwitcher": {
     "en": "English",

@@ -5,6 +5,7 @@ import { X, Plus, AlertTriangle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { createJob } from "@/lib/api";
 import FolderPicker from "./FolderPicker";
+import JobAdvancedSection from "./JobAdvancedSection";
 import SchedulePicker from "./SchedulePicker";
 import { useToast } from "./ToastProvider";
 
@@ -23,6 +24,10 @@ export default function CreateJobModal({
   const [sourcePath, setSourcePath] = useState("");
   const [destPath, setDestPath] = useState("");
   const [cronExpr, setCronExpr] = useState("");
+  const [jobAutoWake, setJobAutoWake] = useState<boolean | null>(null);
+  const [jobVersioningLimit, setJobVersioningLimit] = useState<number | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const t = useTranslations("createJob");
@@ -59,12 +64,16 @@ export default function CreateJobModal({
         source_path: sourcePath.trim(),
         dest_path: destPath.trim(),
         schedule_cron: cronExpr.trim() || null,
+        job_auto_wake: jobAutoWake,
+        job_versioning_limit: jobVersioningLimit,
       });
       addToast("success", tToast("jobCreated", { name: name.trim() }));
       setName("");
       setSourcePath("");
       setDestPath("");
       setCronExpr("");
+      setJobAutoWake(null);
+      setJobVersioningLimit(null);
       await onCreated();
       onClose();
     } catch (err: unknown) {
@@ -178,6 +187,14 @@ export default function CreateJobModal({
 
           {/* Schedule — friendly picker */}
           <SchedulePicker value={cronExpr} onChange={setCronExpr} />
+
+          {/* Advanced — Auto-Wake + Versioning overrides */}
+          <JobAdvancedSection
+            jobAutoWake={jobAutoWake}
+            jobVersioningLimit={jobVersioningLimit}
+            onAutoWakeChange={setJobAutoWake}
+            onVersioningChange={setJobVersioningLimit}
+          />
 
           {/* Submit */}
           <button

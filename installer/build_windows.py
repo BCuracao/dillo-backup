@@ -17,7 +17,7 @@ Usage:
   python installer/build_windows.py [--skip-inno] [--node-version 22.14.0]
 
 Output:
-  dist/installer/Dillo-Backup-Setup-1.0.0.exe
+  dist/installer/Dillo-Backup-Setup-1.0.3.exe
 """
 
 from __future__ import annotations
@@ -282,6 +282,8 @@ def build_launcher() -> None:
         "--clean",
         *icon_flag,
     ]
+    for mod in ["pystray", "pystray._win32", "PIL", "PIL.Image"]:
+        cmd.extend(["--hidden-import", mod])
 
     run(cmd, cwd=PROJECT_ROOT)
     log.info("Launcher build complete.")

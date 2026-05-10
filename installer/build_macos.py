@@ -260,6 +260,8 @@ def build_launcher() -> None:
         "--noconfirm", "--clean",
         *icon_flag,
     ]
+    for mod in ["pystray", "pystray._darwin", "PIL", "PIL.Image"]:
+        cmd.extend(["--hidden-import", mod])
 
     run(cmd, cwd=PROJECT_ROOT)
     log.info("Launcher build complete.")

@@ -25,7 +25,7 @@ def _resolve_data_dir() -> Path:
             data_dir = Path.home() / "Library" / "Application Support" / "Dillo Backup"
         elif sys.platform == "win32":
             root = Path(os.environ.get("LOCALAPPDATA", str(Path.home())))
-            data_dir = root / "DilloBackup"
+            data_dir = root / "Dillo Backup"
         else:
             # Linux / other: XDG_DATA_HOME or ~/.local/share
             xdg = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))

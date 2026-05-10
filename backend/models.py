@@ -60,6 +60,13 @@ class BackupJob(Base):
         String(100), nullable=True, default=None
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Per-job overrides — when NULL the global default applies.
+    job_auto_wake: Mapped[Optional[bool]] = mapped_column(
+        Boolean, nullable=True, default=None
+    )
+    job_versioning_limit: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True, default=None
+    )
     created_at: Mapped[datetime] = mapped_column(
         TZDateTime(), default=_utcnow
     )
@@ -74,6 +81,27 @@ class BackupJob(Base):
 
     def __repr__(self) -> str:
         return f"<BackupJob {self.name!r} [{self.id}]>"
+
+
+class GlobalSettings(Base):
+    """Singleton table (id == 1) holding application-wide defaults."""
+
+    __tablename__ = "global_settings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    # Auto-Wake: trigger backups automatically when a target drive is plugged in.
+    global_auto_wake: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Time Capsule: number of historical versions to keep per file.  0 disables versioning.
+    global_versioning_limit: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        TZDateTime(), default=_utcnow, onupdate=_utcnow
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<GlobalSettings auto_wake={self.global_auto_wake} "
+            f"versioning_limit={self.global_versioning_limit}>"
+        )
 
 
 class ActivityLog(Base):

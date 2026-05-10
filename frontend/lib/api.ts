@@ -6,11 +6,14 @@ import type {
   BackupJob,
   BrowseResponse,
   CreateJobPayload,
+  GlobalSettings,
+  GlobalSettingsUpdate,
   JobListResponse,
   JobLog,
   PathValidationResponse,
   RunJobPayload,
   SystemDrivesResponse,
+  SystemEventListResponse,
 } from "./types";
 
 const api = axios.create({
@@ -136,4 +139,39 @@ export async function fetchAutoStartStatus(): Promise<AutoStartStatus> {
 export async function setAutoStart(enabled: boolean): Promise<AutoStartStatus> {
   const { data } = await api.put<AutoStartStatus>("/api/system/autostart", { enabled });
   return data;
+}
+
+// ── Global Settings (Auto-Wake & Time Capsule) ──────────────────────
+
+export async function fetchGlobalSettings(): Promise<GlobalSettings> {
+  const { data } = await api.get<GlobalSettings>("/api/system/global-settings");
+  return data;
+}
+
+export async function updateGlobalSettings(
+  patch: GlobalSettingsUpdate
+): Promise<GlobalSettings> {
+  const { data } = await api.put<GlobalSettings>(
+    "/api/system/global-settings",
+    patch
+  );
+  return data;
+}
+
+// ── System Events (toast feed) ──────────────────────────────────────
+
+export async function fetchSystemEvents(
+  since: number = 0
+): Promise<SystemEventListResponse> {
+  const { data } = await api.get<SystemEventListResponse>(
+    "/api/system/events",
+    { params: { since } }
+  );
+  return data;
+}
+
+// ── Dashboard Heartbeat ─────────────────────────────────────────────
+
+export async function pingDashboardHeartbeat(): Promise<void> {
+  await api.post("/api/system/heartbeat");
 }

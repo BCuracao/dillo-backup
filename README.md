@@ -103,9 +103,9 @@ python installer/build_windows.py              # Full build + Inno Setup install
 python installer/build_windows.py --skip-inno  # Build without installer
 ```
 
-Output: `dist/installer/Dillo-Backup-Setup-1.0.0.exe`
+Output: `dist/installer/Dillo-Backup-Setup-1.0.3.exe`
 
-**Installing:** Double-click `Dillo-Backup-Setup-1.0.0.exe`. The app installs by default to `C:\Program Files\Dillo Backup` and registers under "Add/Remove Programs" as **Dillo Backup**. User data is stored in `%LOCALAPPDATA%\DilloBackup`.
+**Installing:** Double-click `Dillo-Backup-Setup-1.0.3.exe`. The app installs by default to `C:\Program Files\Dillo Backup` and registers under "Add/Remove Programs" as **Dillo Backup**. User data is stored in `%LOCALAPPDATA%\Dillo Backup`.
 
 ### macOS DMG
 

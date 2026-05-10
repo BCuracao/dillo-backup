@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { updateJob } from "@/lib/api";
 import type { BackupJob } from "@/lib/types";
 import FolderPicker from "./FolderPicker";
+import JobAdvancedSection from "./JobAdvancedSection";
 import SchedulePicker from "./SchedulePicker";
 import { useToast } from "./ToastProvider";
 
@@ -24,6 +25,10 @@ export default function EditJobModal({
   const [sourcePath, setSourcePath] = useState("");
   const [destPath, setDestPath] = useState("");
   const [cronExpr, setCronExpr] = useState("");
+  const [jobAutoWake, setJobAutoWake] = useState<boolean | null>(null);
+  const [jobVersioningLimit, setJobVersioningLimit] = useState<number | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const t = useTranslations("editJob");
@@ -38,6 +43,8 @@ export default function EditJobModal({
       setSourcePath(job.source_path);
       setDestPath(job.dest_path);
       setCronExpr(job.schedule_cron ?? "");
+      setJobAutoWake(job.job_auto_wake ?? null);
+      setJobVersioningLimit(job.job_versioning_limit ?? null);
       setError(null);
     }
   }, [job]);
@@ -71,6 +78,8 @@ export default function EditJobModal({
         source_path: sourcePath.trim(),
         dest_path: destPath.trim(),
         schedule_cron: cronExpr.trim() || null,
+        job_auto_wake: jobAutoWake,
+        job_versioning_limit: jobVersioningLimit,
       });
       addToast("success", tToast("jobUpdated", { name: name.trim() }));
       await onUpdated();
@@ -186,6 +195,17 @@ export default function EditJobModal({
 
           {/* Schedule — friendly picker */}
           <SchedulePicker value={cronExpr} onChange={setCronExpr} />
+
+          {/* Advanced — Auto-Wake + Versioning overrides */}
+          <JobAdvancedSection
+            jobAutoWake={jobAutoWake}
+            jobVersioningLimit={jobVersioningLimit}
+            onAutoWakeChange={setJobAutoWake}
+            onVersioningChange={setJobVersioningLimit}
+            defaultOpen={
+              job.job_auto_wake !== null || job.job_versioning_limit !== null
+            }
+          />
 
           {/* Submit */}
           <button

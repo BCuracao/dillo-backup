@@ -17,6 +17,7 @@ from sqlalchemy import select
 from ..database import async_session_factory
 from ..models import BackupJob, JobLog
 from ..services.activity_logger import EventType, log_activity
+from ..services.backup_queue import derive_volume_key, get_backup_queue
 
 logger = logging.getLogger("pybackup.scheduler")
 
@@ -89,9 +90,16 @@ async def _scheduler_loop() -> None:
                         job_id=job.id,
                     )
 
-                    asyncio.create_task(
-                        BackupManager.run_backup(job_id=job.id),
-                        name=f"scheduled-backup-{job.id}",
+                    # Sequential per-volume queue so two scheduled jobs that
+                    # land on the same minute and the same destination drive
+                    # do not race for the disk.
+                    bound_id = job.id
+                    bound_name = job.name
+                    await get_backup_queue().enqueue(
+                        volume_key=derive_volume_key(job.dest_path),
+                        job_id=bound_id,
+                        job_name=bound_name,
+                        factory=lambda jid=bound_id: BackupManager.run_backup(job_id=jid),
                     )
 
         except Exception:

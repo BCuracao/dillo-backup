@@ -19,6 +19,7 @@ _APP_ID = "DilloBackup"
 _MACOS_LABEL = "com.dillo.backup"
 _LINUX_DESKTOP_ID = "dillo-backup"
 _MACOS_LOG_DIR_NAME = "Dillo Backup"
+_HIDDEN_FLAG = "--hidden"
 
 
 def _get_exe_path() -> Path | None:
@@ -36,11 +37,14 @@ def _get_exe_path() -> Path | None:
     # Layout (Windows/Linux portable + macOS .app):
     #   {install}/backend/dillo-backend/dillo-backend(.exe)
     #   {App}.app/Contents/MacOS/DilloBackup   ← launcher (bundled GUI entry)
-    #   {App}.app/Contents/MacOS/backend/dillo-backend/dillo-backend
-    # Three parents up from the backend binary: install root (Win/Linux) or
-    # Contents/MacOS (macOS) — in both cases the launcher is alongside backend/.
+    #   {App}.app/Contents/Resources/backend/dillo-backend/dillo-backend
     if exe.parent.name == "dillo-backend":
         root = exe.parent.parent.parent
+        if sys.platform == "darwin" and root.name == "Resources" and root.parent.name == "Contents":
+            launcher = root.parent / "MacOS" / "DilloBackup"
+            if launcher.is_file():
+                return launcher.resolve()
+
         launcher = (
             (root / "DilloBackup.exe")
             if sys.platform == "win32"
@@ -66,8 +70,8 @@ def _win_get_enabled() -> bool:
             winreg.KEY_READ,
         )
         try:
-            winreg.QueryValueEx(key, _APP_ID)
-            return True
+            value, _value_type = winreg.QueryValueEx(key, _APP_ID)
+            return _HIDDEN_FLAG in str(value).split()
         except FileNotFoundError:
             return False
         finally:
@@ -91,7 +95,7 @@ def _win_set_enabled(enabled: bool) -> bool:
                 if exe is None:
                     logger.warning("Cannot enable autostart: not running from a frozen executable.")
                     return False
-                winreg.SetValueEx(key, _APP_ID, 0, winreg.REG_SZ, f'"{exe}"')
+                winreg.SetValueEx(key, _APP_ID, 0, winreg.REG_SZ, f'"{exe}" {_HIDDEN_FLAG}')
                 logger.info("Windows autostart enabled: %s", exe)
             else:
                 try:
@@ -115,7 +119,15 @@ def _macos_plist_path() -> Path:
 
 
 def _macos_get_enabled() -> bool:
-    return _macos_plist_path().exists()
+    plist_path = _macos_plist_path()
+    if not plist_path.exists():
+        return False
+    try:
+        with open(plist_path, "rb") as f:
+            plist_data = plistlib.load(f)
+        return _HIDDEN_FLAG in plist_data.get("ProgramArguments", [])
+    except Exception:
+        return False
 
 
 def _macos_set_enabled(enabled: bool) -> bool:
@@ -129,7 +141,7 @@ def _macos_set_enabled(enabled: bool) -> bool:
             log_dir = Path.home() / "Library" / "Logs" / _MACOS_LOG_DIR_NAME
             plist_data = {
                 "Label": _MACOS_LABEL,
-                "ProgramArguments": [str(exe)],
+                "ProgramArguments": [str(exe), _HIDDEN_FLAG],
                 "RunAtLoad": True,
                 "KeepAlive": False,
                 "StandardOutPath": str(log_dir / "launcher.log"),
@@ -158,7 +170,13 @@ def _linux_desktop_path() -> Path:
 
 
 def _linux_get_enabled() -> bool:
-    return _linux_desktop_path().exists()
+    desktop_path = _linux_desktop_path()
+    if not desktop_path.exists():
+        return False
+    try:
+        return _HIDDEN_FLAG in desktop_path.read_text(encoding="utf-8").split()
+    except Exception:
+        return False
 
 
 def _linux_set_enabled(enabled: bool) -> bool:
@@ -174,7 +192,7 @@ def _linux_set_enabled(enabled: bool) -> bool:
                 f"[Desktop Entry]\n"
                 f"Type=Application\n"
                 f"Name=Dillo Backup\n"
-                f"Exec={exe}\n"
+                f'Exec="{exe}" {_HIDDEN_FLAG}\n'
                 f"Hidden=false\n"
                 f"NoDisplay=false\n"
                 f"X-GNOME-Autostart-enabled=true\n",

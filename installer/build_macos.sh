@@ -210,11 +210,15 @@ build_launcher() {
     "$PYINSTALLER" \
         "$INSTALLER_DIR/launcher.py" \
         --name "$APP_EXECUTABLE_NAME" \
-        --onefile --console \
+        --onefile --windowed \
         --distpath "$DIST_DIR" \
         --workpath "$PROJECT_ROOT/build/launcher" \
         --specpath "$PROJECT_ROOT/build" \
         --noconfirm --clean \
+        --hidden-import pystray \
+        --hidden-import pystray._darwin \
+        --hidden-import PIL \
+        --hidden-import PIL.Image \
         $ICON_FLAG
 
     log "Launcher build complete."

@@ -20,6 +20,8 @@ export interface BackupJob {
   dest_path: string;
   schedule_cron: string | null;
   is_active: boolean;
+  job_auto_wake: boolean | null;
+  job_versioning_limit: number | null;
   created_at: string;
   updated_at: string;
   latest_log: JobLog | null;
@@ -36,6 +38,8 @@ export interface CreateJobPayload {
   dest_path: string;
   schedule_cron?: string | null;
   is_active?: boolean;
+  job_auto_wake?: boolean | null;
+  job_versioning_limit?: number | null;
 }
 
 export interface RunJobPayload {
@@ -118,4 +122,37 @@ export interface PathValidationResponse {
 export interface AutoStartStatus {
   enabled: boolean;
   platform: string;
+}
+
+// ── Global Settings (Auto-Wake & Time Capsule defaults) ──────────────
+
+export interface GlobalSettings {
+  global_auto_wake: boolean;
+  global_versioning_limit: number;
+}
+
+export type GlobalSettingsUpdate = Partial<GlobalSettings>;
+
+// ── System Events (toast feed) ──────────────────────────────────────
+
+export type SystemEventType =
+  | "DRIVE_DETECTED"
+  | "AUTO_WAKE_TRIGGERED"
+  | "DRIVE_JOBS_QUEUED"
+  | "BACKUP_STARTED"
+  | "BACKUP_COMPLETED"
+  | "BACKUP_FAILED"
+  | (string & {}); // forward-compat for new event types
+
+export interface SystemEvent {
+  id: number;
+  event_type: SystemEventType;
+  message: string;
+  timestamp: string;
+  data: Record<string, unknown> | null;
+}
+
+export interface SystemEventListResponse {
+  events: SystemEvent[];
+  last_id: number;
 }
