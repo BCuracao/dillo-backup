@@ -28,6 +28,7 @@ from ..database import async_session_factory
 from ..models import BackupJob
 from ..services.activity_logger import EventType, log_activity
 from ..services.backup_queue import derive_volume_key, get_backup_queue
+from ..services.drive_filter import should_ignore_volume
 from ..services.settings_service import get_global_settings, resolve_auto_wake
 from ..services.system_events import (
     EVT_AUTO_WAKE_TRIGGERED,
@@ -48,14 +49,19 @@ DEBOUNCE_SECONDS = 60.0
 
 
 def _list_current_drive_roots() -> set[str]:
-    """Snapshot the set of currently mounted drive roots."""
-    roots: set[str] = set()
+    """Snapshot the set of currently mounted drive roots.
+
+    Installer DMGs and other virtual / read-only volumes are filtered out
+    here so they never trigger Auto-Wake when the user mounts the Dillo
+    installer.
+    """
+    candidates: set[str] = set()
     if sys.platform == "win32":
         for letter in string.ascii_uppercase:
             root = f"{letter}:\\"
             try:
                 if os.path.exists(root):
-                    roots.add(root)
+                    candidates.add(root)
             except OSError:
                 continue
     elif sys.platform == "darwin":
@@ -64,7 +70,7 @@ def _list_current_drive_roots() -> set[str]:
             if volumes.is_dir():
                 for entry in volumes.iterdir():
                     if entry.is_dir() and not entry.is_symlink():
-                        roots.add(str(entry))
+                        candidates.add(str(entry))
         except OSError:
             pass
     else:
@@ -74,16 +80,22 @@ def _list_current_drive_roots() -> set[str]:
                 if base.is_dir():
                     for entry in base.iterdir():
                         if entry.is_dir() and not entry.is_symlink():
-                            roots.add(str(entry))
+                            candidates.add(str(entry))
                             # /media/<user>/<drive> on most Linux desktops
                             try:
                                 for sub in entry.iterdir():
                                     if sub.is_dir() and not sub.is_symlink():
-                                        roots.add(str(sub))
+                                        candidates.add(str(sub))
                             except OSError:
                                 pass
             except OSError:
                 continue
+
+    roots: set[str] = set()
+    for path in candidates:
+        if should_ignore_volume(path):
+            continue
+        roots.add(path)
     return roots
 
 

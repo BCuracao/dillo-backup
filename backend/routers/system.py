@@ -28,6 +28,7 @@ from ..schemas import (
     SystemEventListResponse,
 )
 from ..services.autostart import is_autostart_enabled, set_autostart
+from ..services.drive_filter import should_ignore_volume
 from ..services.path_validator import verify_directory_access
 from ..services.settings_service import (
     get_global_settings,
@@ -80,6 +81,13 @@ async def list_drives() -> SystemDrivesResponse:
                 continue
             try:
                 usage = shutil.disk_usage(drive_path)
+                if should_ignore_volume(
+                    drive_path,
+                    name=f"Drive {letter}:",
+                    total_bytes=usage.total,
+                ):
+                    logger.info("Hiding virtual/installer drive %s", drive_path)
+                    continue
                 drives.append(
                     DriveInfo(
                         path=drive_path,
@@ -90,7 +98,12 @@ async def list_drives() -> SystemDrivesResponse:
                     )
                 )
             except OSError:
-                # Drive responds to a probe but disk_usage fails — still list it
+                # Virtual / cloud drives that fail ``disk_usage`` get a
+                # zero-size record. Run them through the filter too so a
+                # mounted DMG with a Dillo* drive letter is still hidden.
+                if should_ignore_volume(drive_path, name=f"Drive {letter}:"):
+                    logger.info("Hiding virtual/installer drive %s", drive_path)
+                    continue
                 drives.append(
                     DriveInfo(
                         path=drive_path,
@@ -120,10 +133,21 @@ async def list_drives() -> SystemDrivesResponse:
             if mp.exists() and mp.is_dir():
                 try:
                     usage = shutil.disk_usage(mount)
+                    label = mp.name or "/"
+                    # Always allow the system root through — the filter would
+                    # otherwise classify a read-only sealed APFS root as
+                    # "ignore", but it has its own dedicated UI affordance.
+                    if mount != "/" and should_ignore_volume(
+                        mount,
+                        name=label,
+                        total_bytes=usage.total,
+                    ):
+                        logger.info("Hiding virtual/installer volume %s", mount)
+                        continue
                     drives.append(
                         DriveInfo(
                             path=mount,
-                            label=mp.name or "/",
+                            label=label,
                             total_gb=round(usage.total / (1024**3), 2),
                             free_gb=round(usage.free / (1024**3), 2),
                             fs_type="apfs" if platform.system() == "Darwin" else "ext4",

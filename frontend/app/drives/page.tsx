@@ -13,20 +13,25 @@ export default function DrivesPage() {
   const [drives, setDrives] = useState<DriveInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadDrives = useCallback(async () => {
-    setLoading(true);
+  const loadDrives = useCallback(async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     try {
       const res = await fetchDrives();
       setDrives(res.drives);
     } catch {
       /* backend not available */
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadDrives();
+    // Initial fetch with spinner; subsequent polls refresh silently so the
+    // list automatically drops mounted DMGs / virtual volumes the moment the
+    // backend filter recognises them, without flickering the UI.
+    loadDrives(true);
+    const interval = setInterval(() => loadDrives(false), 5000);
+    return () => clearInterval(interval);
   }, [loadDrives]);
 
   return (
@@ -47,7 +52,7 @@ export default function DrivesPage() {
           </div>
 
           <button
-            onClick={loadDrives}
+            onClick={() => loadDrives(true)}
             disabled={loading}
             className="flex items-center gap-2 rounded-lg border border-card-border px-4 py-2.5 text-sm text-muted transition-colors hover:border-accent/30 hover:text-foreground disabled:opacity-50"
           >

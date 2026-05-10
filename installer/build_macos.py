@@ -50,13 +50,15 @@ INSTALLER_DIR = PROJECT_ROOT / "installer"
 ASSETS_DIR = INSTALLER_DIR / "assets"
 DIST_DIR = PROJECT_ROOT / "dist" / "dillo-mac"
 APP_BUNDLE = PROJECT_ROOT / "dist" / "Dillo Backup.app"
-DMG_OUTPUT = PROJECT_ROOT / "dist" / "installer" / "Dillo-Backup-1.0.0.dmg"
+APP_VERSION = "1.0.3"
+DMG_OUTPUT = (
+    PROJECT_ROOT / "dist" / "installer" / f"Dillo-Backup-Setup-{APP_VERSION}.dmg"
+)
 
 NODE_VERSION_DEFAULT = "22.14.0"
 MACHINE = platform.machine()
 NODE_ARCH = "arm64" if MACHINE == "arm64" else "x64"
 
-APP_VERSION = "1.0.0"
 APP_DISPLAY_NAME = "Dillo Backup"
 APP_BUNDLE_NAME = "Dillo Backup"
 APP_EXECUTABLE_NAME = "DilloBackup"
